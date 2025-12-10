@@ -22,4 +22,17 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+// Mock nav data API
+app.MapGet("/api/nav", () =>
+{
+    var items = new[]
+    {
+        new { id = "topic-view", title = "Topics" },
+        new { id = "consumers", title = "Consumers" },
+        new { id = "brokers", title = "Brokers" },
+        new { id = "settings", title = "Settings" }
+    };
+    return Results.Json(items);
+});
+
 app.Run();

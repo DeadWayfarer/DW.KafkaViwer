@@ -1,0 +1,20 @@
+@page "/"
+@model DW.KafkaViwer.Web.Pages.Index.IndexModel
+@{
+    ViewData["Title"] = "Kafka Viewer";
+}
+
+<div class="page-shell">
+    <partial name="_SidebarNav" />
+    <div class="main-area">
+        <partial name="_TabBar" />
+        <div id="templates" hidden>
+            <partial name="_TopicView" />
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/index.js" asp-append-version="true"></script>
+}
+
