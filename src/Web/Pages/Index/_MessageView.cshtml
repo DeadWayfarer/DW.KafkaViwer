@@ -31,13 +31,13 @@
             </div>
             <div class="full-row form-group">
                 <label class="form-label" for="msg-filter">Фильтр</label>
-                <div class="filter-row">
+                <div class="input-group">
                     <input class="form-control" id="msg-filter" type="text" placeholder="Введите текст..." />
-                    <div class="btn-group gap-2">
-                        <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
-                        <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Создать</button>
-                        <button id="msg-consumers-btn" type="button" class="btn btn-outline-secondary filter-btn">👥 Консьюмеры</button>
-                    </div>
+                    <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
+                </div>
+                <div class="btn-group gap-2" style="margin-top: 12px;">
+                    <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Отправить сообщение</button>
+                    <button id="msg-consumers-btn" type="button" class="btn btn-outline-secondary filter-btn">👥 Посмотреть консьюмеры топика</button>
                 </div>
             </div>
         </div>
@@ -49,11 +49,11 @@
             <table class="table table-dark table-sm topic-table" id="message-table">
                 <thead>
                     <tr>
-                        <th>Partition</th>
-                        <th>Offset</th>
-                        <th>Key</th>
-                        <th>Value</th>
-                        <th>Timestamp (UTC)</th>
+                        <th>Партиция</th>
+                        <th>Смещение</th>
+                        <th>Ключ</th>
+                        <th>Значение</th>
+                        <th>Временная метка (UTC)</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

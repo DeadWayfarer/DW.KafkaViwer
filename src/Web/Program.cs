@@ -28,10 +28,10 @@ app.MapGet("/api/nav", () =>
 {
     var items = new[]
     {
-        new { id = "topic-list-view", title = "Topics" },
-        new { id = "consumers", title = "Consumers" },
-        new { id = "brokers", title = "Brokers" },
-        new { id = "settings", title = "Settings" }
+        new { id = "topic-list-view", title = "Топики" },
+        new { id = "consumers", title = "Консьюмеры" },
+        new { id = "brokers", title = "Брокеры" },
+        new { id = "settings", title = "Настройки" }
     };
     return Results.Json(items);
 });

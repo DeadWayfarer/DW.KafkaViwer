@@ -230,6 +230,23 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   align-items: end;
 }
 
+.input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-group .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  flex: 1;
+}
+
+.input-group .btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  white-space: nowrap;
+}
+
 .filter-btn {
   display: inline-flex;
   align-items: center;
@@ -362,6 +379,7 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 .navbar-brand {
   padding-top: 4px;
   padding-bottom: 4px;
+  padding-left: 16px;
   margin-right: 12px;
 }
 

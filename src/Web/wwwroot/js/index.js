@@ -5,9 +5,8 @@
   const navList = document.getElementById('nav-list');
   const tabHeader = document.getElementById('tab-header');
   const tabContent = document.getElementById('tab-content');
-  const addTabButton = document.getElementById('tab-add');
 
-  if (!navList || !tabHeader || !tabContent || !addTabButton) {
+  if (!navList || !tabHeader || !tabContent) {
     return;
   }
 
@@ -16,7 +15,7 @@
   const tabState = {
     activeId: 'topic-list-view',
     tabs: [
-      { id: 'topic-list-view', title: 'Topics', closable: false, render: renderTopicView }
+      { id: 'topic-list-view', title: 'Топики', closable: false, render: renderTopicView }
     ]
   };
 
@@ -62,9 +61,9 @@
     })
     .catch(() => {
       navItems.splice(0, navItems.length,
-        { id: 'overview', title: 'Overview' },
-        { id: 'topic-list-view', title: 'Topics' },
-        { id: 'settings', title: 'Settings' }
+        { id: 'overview', title: 'Обзор' },
+        { id: 'topic-list-view', title: 'Топики' },
+        { id: 'settings', title: 'Настройки' }
       );
       renderNav();
     });
@@ -78,9 +77,9 @@
       li.className = 'nav-item';
       li.addEventListener('click', () => {
         if (item.id === 'brokers') {
-          openTab('broker-view', 'Brokers', { render: renderBrokerView, closable: true });
+          openTab('broker-view', 'Брокеры', { render: renderBrokerView, closable: true });
         } else if (item.id === 'topic-list-view') {
-          openTab('topic-list-view', 'Topics', { render: renderTopicView, closable: false });
+          openTab('topic-list-view', 'Топики', { render: renderTopicView, closable: false });
         } else {
           openTab(item.id, item.title);
         }
@@ -99,6 +98,15 @@
       btn.dataset.tabId = tab.id;
       btn.addEventListener('click', () => activateTab(tab.id));
 
+      // Close tab on middle mouse button click
+      btn.addEventListener('auxclick', (e) => {
+        if (e.button === 1 && tab.closable) {
+          e.preventDefault();
+          e.stopPropagation();
+          closeTab(tab.id);
+        }
+      });
+
       if (tab.closable) {
         const close = document.createElement('span');
         close.textContent = '×';
@@ -109,7 +117,7 @@
         });
         btn.appendChild(close);
       }
-      tabHeader.insertBefore(btn, addTabButton);
+      tabHeader.appendChild(btn);
     });
     renderTabContent();
   }
@@ -163,11 +171,6 @@
     renderTabs();
   }
 
-  addTabButton.addEventListener('click', () => {
-    const id = `tab-${Date.now()}`;
-    tabState.tabs.push({ id, title: 'New Tab', closable: true });
-    activateTab(id);
-  });
 
   // --- Topic view ---
   function renderTopicView(container) {
@@ -198,7 +201,7 @@
             tr.classList.add('active');
             
             const tabId = `message-${t.name}`;
-            openTab(tabId, `Messages: ${t.name}`, { render: renderMessageView, topic: t.name });
+            openTab(tabId, `Сообщения: ${t.name}`, { render: renderMessageView, topic: t.name });
           });
           tbody.appendChild(tr);
         });
@@ -225,7 +228,7 @@
 
   // --- Message view ---
   function renderMessageView(container, tab) {
-    const topicName = tab.topic || tab.title.replace('Messages: ', '');
+    const topicName = tab.topic || tab.title.replace('Сообщения: ', '');
     container.innerHTML = '';
     container.appendChild(document.querySelector('[data-tab-content="message-view"]').cloneNode(true));
 
@@ -302,8 +305,8 @@
           const fallback = [{
             partition: 0,
             offset: 0,
-            key: 'n/a',
-            value: `No data for ${topicName}`,
+            key: 'н/д',
+            value: `Нет данных для ${topicName}`,
             timestampUtc: new Date().toISOString()
           }];
           renderRows(fallback);
@@ -452,7 +455,7 @@
 
     consumersBtn.addEventListener('click', () => {
       const tabId = `consumers-${topicName}`;
-      openTab(tabId, `Consumers: ${topicName}`, { render: renderConsumerView, topic: topicName });
+      openTab(tabId, `Консьюмеры: ${topicName}`, { render: renderConsumerView, topic: topicName });
     });
 
     loadMessages();
@@ -498,9 +501,9 @@
         })
         .catch(() => {
           const mock = [
-            { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Active' },
-            { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Active' },
-            { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Rebalancing' }
+            { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Активен' },
+            { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Активен' },
+            { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Перебалансировка' }
           ];
           renderRows(mock);
           if (statusEl) statusEl.textContent = 'Показаны мок-данные';
@@ -541,20 +544,20 @@
                 <input class="form-control" id="broker-connection-name" type="text" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="broker-host">Host</label>
+                <label class="form-label" for="broker-host">Хост</label>
                 <input class="form-control" id="broker-host" type="text" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="broker-port">Port</label>
+                <label class="form-label" for="broker-port">Порт</label>
                 <input class="form-control" id="broker-port" type="number" min="1" max="65535" required />
               </div>
               <div class="form-group">
-                <label class="form-label" for="broker-status">Status</label>
+                <label class="form-label" for="broker-status">Статус</label>
                 <select class="form-select" id="broker-status" required>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="Connecting">Connecting</option>
-                  <option value="Error">Error</option>
+                  <option value="Active">Активен</option>
+                  <option value="Inactive">Неактивен</option>
+                  <option value="Connecting">Подключение</option>
+                  <option value="Error">Ошибка</option>
                 </select>
               </div>
               <div class="form-group">
@@ -703,6 +706,16 @@
         });
     });
 
+    const translateStatus = (status) => {
+      const statusMap = {
+        'Active': 'Активен',
+        'Inactive': 'Неактивен',
+        'Connecting': 'Подключение',
+        'Error': 'Ошибка'
+      };
+      return statusMap[status] || status;
+    };
+
     const renderRows = (rows) => {
       currentBrokers = rows;
       tbody.innerHTML = '';
@@ -713,7 +726,7 @@
           <td>${b.connectionName || '-'}</td>
           <td>${b.host}</td>
           <td>${b.port}</td>
-          <td>${b.status}</td>
+          <td>${translateStatus(b.status)}</td>
           <td>${b.clientId || '-'}</td>
           <td>
             <button class="btn-icon btn-edit" data-broker-id="${b.id}" title="Изменить">✏️</button>
