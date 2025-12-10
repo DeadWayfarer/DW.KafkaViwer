@@ -29,14 +29,15 @@
                 <label class="form-label" for="msg-to">Загрузить по</label>
                 <input class="form-control" id="msg-to" type="datetime-local" />
             </div>
-            <div class="form-group">
+            <div class="full-row form-group">
                 <label class="form-label" for="msg-filter">Фильтр</label>
-                <input class="form-control" id="msg-filter" type="text" placeholder="Введите текст..." />
-            </div>
-            <div class="form-group align-end">
-                <div class="btn-group gap-2">
-                    <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
-                    <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Создать</button>
+                <div class="filter-row">
+                    <input class="form-control" id="msg-filter" type="text" placeholder="Введите текст..." />
+                    <div class="btn-group gap-2">
+                        <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
+                        <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Создать</button>
+                        <button id="msg-consumers-btn" type="button" class="btn btn-outline-secondary filter-btn">👥 Консьюмеры</button>
+                    </div>
                 </div>
             </div>
         </div>

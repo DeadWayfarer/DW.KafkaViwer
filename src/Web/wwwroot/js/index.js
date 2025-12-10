@@ -222,6 +222,7 @@
     const filterEl = container.querySelector('#msg-filter');
     const searchBtn = container.querySelector('#msg-search-btn');
     const createBtn = container.querySelector('#msg-create-btn');
+    const consumersBtn = container.querySelector('#msg-consumers-btn');
 
     meta.textContent = `Топик: ${topicName}`;
 
@@ -297,7 +298,39 @@
       alert('Создание сообщения: пока мок-реализация');
     });
 
+    consumersBtn.addEventListener('click', () => {
+      const tabId = `consumers-${topicName}`;
+      openTab(tabId, `Consumers: ${topicName}`, { render: renderConsumerView, topic: topicName });
+    });
+
     loadMessages();
+  }
+
+  // --- Consumer view ---
+  function renderConsumerView(container, tab) {
+    const topicName = tab.topic || '';
+    container.innerHTML = '';
+    container.appendChild(document.querySelector('[data-tab-content="consumer-view"]').cloneNode(true));
+
+    const tbody = container.querySelector('#consumer-table tbody');
+
+    const mock = [
+      { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Active' },
+      { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Active' },
+      { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Rebalancing' }
+    ];
+
+    tbody.innerHTML = '';
+    mock.forEach(m => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${m.group}</td>
+        <td>${m.member}</td>
+        <td>${m.lag}</td>
+        <td>${m.status}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 })();
 

@@ -239,6 +239,23 @@ body.fluent-body {
   flex-wrap: wrap;
 }
 
+.message-filter-grid .full-row {
+  grid-column: 1 / -1;
+}
+
+.filter-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.message-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .fluent-nav {
   background: rgba(24, 28, 33, 0.8);
   backdrop-filter: blur(10px);
