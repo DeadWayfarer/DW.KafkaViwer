@@ -215,8 +215,26 @@ body.fluent-body {
   background: var(--surface-alt);
 }
 
+.topic-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, border-left 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
 .topic-table tbody tr:hover {
-  background: rgba(76, 194, 255, 0.05);
+  background: rgba(76, 194, 255, 0.15);
+  border-left-color: rgba(76, 194, 255, 0.5);
+}
+
+.topic-table tbody tr.active {
+  background: rgba(76, 194, 255, 0.25);
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(76, 194, 255, 0.2);
+}
+
+.topic-table tbody tr.active:hover {
+  background: rgba(76, 194, 255, 0.3);
+  box-shadow: 0 2px 12px rgba(76, 194, 255, 0.3);
 }
 
 .message-meta {

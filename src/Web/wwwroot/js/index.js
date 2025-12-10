@@ -188,7 +188,12 @@
             <td>${t.messages.toLocaleString()}</td>
             <td>${t.retentionDays}</td>
           `;
-          tr.addEventListener('click', () => {
+          tr.addEventListener('click', (e) => {
+            // Remove active class from all rows
+            tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));
+            // Add active class to clicked row
+            tr.classList.add('active');
+            
             const tabId = `message-${t.name}`;
             openTab(tabId, `Messages: ${t.name}`, { render: renderMessageView, topic: t.name });
           });
@@ -260,6 +265,12 @@
           <td>${m.value}</td>
           <td>${new Date(m.timestampUtc).toLocaleString()}</td>
         `;
+        tr.addEventListener('click', () => {
+          // Remove active class from all rows
+          tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));
+          // Add active class to clicked row
+          tr.classList.add('active');
+        });
         tbody.appendChild(tr);
       });
     };
@@ -334,6 +345,12 @@
           <td>${m.lag}</td>
           <td>${m.status}</td>
         `;
+        tr.addEventListener('click', () => {
+          // Remove active class from all rows
+          tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));
+          // Add active class to clicked row
+          tr.classList.add('active');
+        });
         tbody.appendChild(tr);
       });
     };
@@ -570,12 +587,26 @@
             <button class="btn-icon btn-delete" data-broker-id="${b.id}" title="Удалить">🗑️</button>
           </td>
         `;
+        
+        // Add click handler for row selection
+        tr.addEventListener('click', (e) => {
+          // Don't select row if clicking on action buttons
+          if (e.target.closest('.btn-icon')) {
+            return;
+          }
+          // Remove active class from all rows
+          tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));
+          // Add active class to clicked row
+          tr.classList.add('active');
+        });
+        
         tbody.appendChild(tr);
       });
 
       // Add event listeners for action buttons
       tbody.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent row selection
           const brokerId = parseInt(e.target.dataset.brokerId);
           const broker = rows.find(b => b.id === brokerId);
           if (broker) {
@@ -586,6 +617,7 @@
 
       tbody.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent row selection
           const brokerId = parseInt(e.target.dataset.brokerId);
           const broker = rows.find(b => b.id === brokerId);
           if (broker && confirm(`Удалить брокер ${broker.host}:${broker.port}?`)) {
