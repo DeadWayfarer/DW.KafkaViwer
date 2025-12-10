@@ -387,6 +387,10 @@
             <form id="broker-form">
               <input type="hidden" id="broker-id" />
               <div class="form-group">
+                <label class="form-label" for="broker-connection-name">Название подключения</label>
+                <input class="form-control" id="broker-connection-name" type="text" required />
+              </div>
+              <div class="form-group">
                 <label class="form-label" for="broker-host">Host</label>
                 <input class="form-control" id="broker-host" type="text" required />
               </div>
@@ -402,6 +406,26 @@
                   <option value="Connecting">Connecting</option>
                   <option value="Error">Error</option>
                 </select>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="broker-auth-enabled" />
+                  <label class="form-check-label" for="broker-auth-enabled">Авторизация</label>
+                </div>
+              </div>
+              <div id="broker-auth-fields" style="display: none;">
+                <div class="form-group">
+                  <label class="form-label" for="broker-client-id">ClientId</label>
+                  <input class="form-control" id="broker-client-id" type="text" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="broker-client-secret">ClientSecret</label>
+                  <input class="form-control" id="broker-client-secret" type="password" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="broker-oidc-endpoint">OIDCEndpoint</label>
+                  <input class="form-control" id="broker-oidc-endpoint" type="text" />
+                </div>
               </div>
             </form>
           </div>
@@ -420,9 +444,25 @@
     const modalApply = document.getElementById('broker-modal-apply');
     const brokerForm = document.getElementById('broker-form');
     const brokerIdInput = document.getElementById('broker-id');
+    const brokerConnectionNameInput = document.getElementById('broker-connection-name');
     const brokerHostInput = document.getElementById('broker-host');
     const brokerPortInput = document.getElementById('broker-port');
     const brokerStatusInput = document.getElementById('broker-status');
+    const brokerAuthEnabled = document.getElementById('broker-auth-enabled');
+    const brokerAuthFields = document.getElementById('broker-auth-fields');
+    const brokerClientIdInput = document.getElementById('broker-client-id');
+    const brokerClientSecretInput = document.getElementById('broker-client-secret');
+    const brokerOIDCEndpointInput = document.getElementById('broker-oidc-endpoint');
+
+    // Toggle auth fields visibility
+    brokerAuthEnabled.addEventListener('change', () => {
+      brokerAuthFields.style.display = brokerAuthEnabled.checked ? 'block' : 'none';
+      if (!brokerAuthEnabled.checked) {
+        brokerClientIdInput.value = '';
+        brokerClientSecretInput.value = '';
+        brokerOIDCEndpointInput.value = '';
+      }
+    });
 
     let currentBrokers = [];
 
@@ -430,15 +470,29 @@
       if (broker) {
         modalTitle.textContent = 'Изменить брокер';
         brokerIdInput.value = broker.id;
+        brokerConnectionNameInput.value = broker.connectionName || '';
         brokerHostInput.value = broker.host;
         brokerPortInput.value = broker.port;
         brokerStatusInput.value = broker.status;
+        
+        const hasAuth = broker.clientId || broker.clientSecret || broker.oidcEndpoint;
+        brokerAuthEnabled.checked = hasAuth;
+        brokerAuthFields.style.display = hasAuth ? 'block' : 'none';
+        brokerClientIdInput.value = broker.clientId || '';
+        brokerClientSecretInput.value = broker.clientSecret || '';
+        brokerOIDCEndpointInput.value = broker.oidcEndpoint || '';
       } else {
         modalTitle.textContent = 'Добавить брокер';
         brokerIdInput.value = '';
+        brokerConnectionNameInput.value = '';
         brokerHostInput.value = '';
         brokerPortInput.value = '';
         brokerStatusInput.value = 'Active';
+        brokerAuthEnabled.checked = false;
+        brokerAuthFields.style.display = 'none';
+        brokerClientIdInput.value = '';
+        brokerClientSecretInput.value = '';
+        brokerOIDCEndpointInput.value = '';
       }
       modal.style.display = 'flex';
     };
@@ -446,6 +500,8 @@
     const closeModal = () => {
       modal.style.display = 'none';
       brokerForm.reset();
+      brokerAuthEnabled.checked = false;
+      brokerAuthFields.style.display = 'none';
     };
 
     modalClose.addEventListener('click', closeModal);
@@ -464,9 +520,13 @@
 
       const brokerData = {
         id: brokerIdInput.value ? parseInt(brokerIdInput.value) : 0,
+        connectionName: brokerConnectionNameInput.value.trim(),
         host: brokerHostInput.value.trim(),
         port: parseInt(brokerPortInput.value),
-        status: brokerStatusInput.value
+        status: brokerStatusInput.value,
+        clientId: brokerAuthEnabled.checked ? brokerClientIdInput.value.trim() || null : null,
+        clientSecret: brokerAuthEnabled.checked ? brokerClientSecretInput.value.trim() || null : null,
+        oidcEndpoint: brokerAuthEnabled.checked ? brokerOIDCEndpointInput.value.trim() || null : null
       };
 
       const isEdit = brokerIdInput.value !== '';
@@ -500,9 +560,11 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${b.id}</td>
+          <td>${b.connectionName || '-'}</td>
           <td>${b.host}</td>
           <td>${b.port}</td>
           <td>${b.status}</td>
+          <td>${b.clientId || '-'}</td>
           <td>
             <button class="btn-icon btn-edit" data-broker-id="${b.id}" title="Изменить">✏️</button>
             <button class="btn-icon btn-delete" data-broker-id="${b.id}" title="Удалить">🗑️</button>
@@ -553,9 +615,9 @@
         })
         .catch(() => {
           const mock = [
-            { id: 1, host: 'localhost', port: 9092, status: 'Active' },
-            { id: 2, host: 'localhost', port: 9093, status: 'Active' },
-            { id: 3, host: 'localhost', port: 9094, status: 'Inactive' }
+            { id: 1, connectionName: 'Основной брокер', host: 'localhost', port: 9092, status: 'Active', clientId: 'client-1' },
+            { id: 2, connectionName: 'Резервный брокер', host: 'localhost', port: 9093, status: 'Active', clientId: null },
+            { id: 3, connectionName: 'Тестовый брокер', host: 'localhost', port: 9094, status: 'Inactive', clientId: 'client-3' }
           ];
           renderRows(mock);
         });

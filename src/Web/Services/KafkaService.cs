@@ -96,9 +96,9 @@ public class KafkaService
 
     private static List<BrokerInfo> _brokers = new()
     {
-        new BrokerInfo(1, "localhost", 9092, "Active"),
-        new BrokerInfo(2, "localhost", 9093, "Active"),
-        new BrokerInfo(3, "localhost", 9094, "Inactive")
+        new BrokerInfo(1, "Основной брокер", "localhost", 9092, "Active", "client-1", null, null),
+        new BrokerInfo(2, "Резервный брокер", "localhost", 9093, "Active", null, null, null),
+        new BrokerInfo(3, "Тестовый брокер", "localhost", 9094, "Inactive", "client-3", "secret-3", "https://oidc.example.com")
     };
 
     public List<BrokerInfo> GetBrokers()
@@ -118,7 +118,8 @@ public class KafkaService
     public void AddBroker(BrokerInfo brokerInfo)
     {
         var newId = _brokers.Count > 0 ? _brokers.Max(b => b.Id) + 1 : 1;
-        var newBroker = new BrokerInfo(newId, brokerInfo.Host, brokerInfo.Port, brokerInfo.Status);
+        var newBroker = new BrokerInfo(newId, brokerInfo.ConnectionName, brokerInfo.Host, brokerInfo.Port, brokerInfo.Status, 
+            brokerInfo.ClientId, brokerInfo.ClientSecret, brokerInfo.OIDCEndpoint);
         _brokers.Add(newBroker);
     }
 
