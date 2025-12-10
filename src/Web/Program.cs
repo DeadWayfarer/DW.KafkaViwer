@@ -36,10 +36,10 @@ app.MapGet("/api/nav", () =>
     return Results.Json(items);
 });
 
-// Mock topics API backed by KafkaService
-app.MapGet("/api/topics", (DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+// Topics API backed by KafkaService with filtering
+app.MapGet("/api/topics", (string? name, DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
 {
-    var topics = kafkaService.GetTopics();
+    var topics = kafkaService.GetTopics(new DW.KafkaViwer.Web.Models.TopicFilter(name));
     return Results.Json(topics);
 });
 

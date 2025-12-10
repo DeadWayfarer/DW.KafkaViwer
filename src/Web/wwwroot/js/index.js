@@ -18,10 +18,14 @@
   };
 
   let topics = [];
+  let currentFilter = { name: '' };
 
   // Load topics from API (with fallback)
-  const loadTopics = () => {
-    return fetch('/api/topics')
+  const loadTopics = (filter) => {
+    const params = new URLSearchParams();
+    if (filter?.name) params.append('name', filter.name);
+
+    return fetch('/api/topics?' + params.toString())
       .then(r => r.json())
       .then(data => {
         topics = data ?? [];
@@ -36,7 +40,10 @@
           { name: 'orders', partitions: 6, messages: 45012, retentionDays: 14 },
           { name: 'user-updates', partitions: 4, messages: 32001, retentionDays: 10 },
           { name: 'audit-log', partitions: 3, messages: 9512, retentionDays: 30 }
-        ];
+        ].filter(t =>
+          !filter?.name ||
+          t.name.toLowerCase().includes(filter.name.toLowerCase())
+        );
         if (tabState.activeId === 'topic-view') {
           renderTabs();
         }
@@ -147,6 +154,7 @@
     container.innerHTML = '';
     container.appendChild(document.querySelector('[data-tab-content="topic-view"]').cloneNode(true));
     const filterInput = container.querySelector('#topic-filter-input');
+    const filterBtn = container.querySelector('#topic-filter-btn');
     const tbody = container.querySelector('#topic-table tbody');
 
     const renderRows = (filter = '') => {
@@ -165,12 +173,23 @@
         });
     };
 
-    filterInput.addEventListener('input', (e) => renderRows(e.target.value));
-    renderRows();
+    const applyFilter = () => {
+      currentFilter.name = filterInput.value;
+      loadTopics(currentFilter).then(() => renderRows(filterInput.value));
+    };
+
+    filterBtn.addEventListener('click', applyFilter);
+    filterInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        applyFilter();
+      }
+    });
+
+    renderRows(filterInput.value);
   }
 
   // initial render
   renderTabs();
-  loadTopics();
+  loadTopics(currentFilter);
 })();
 
