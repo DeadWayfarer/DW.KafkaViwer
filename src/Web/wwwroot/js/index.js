@@ -444,11 +444,28 @@
         value: messageValue.trim() || '{}'
       };
 
-      // TODO: Send to API
-      console.log('Creating message:', messageData);
-      alert('Сообщение создано (мок-реализация)');
-      closeCreateModal();
-      loadMessages(); // Reload messages
+      // Send to API
+      fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(messageData)
+      })
+        .then(r => {
+          if (r.ok) {
+            alert('Сообщение успешно отправлено');
+            closeCreateModal();
+            loadMessages(); // Reload messages
+          } else {
+            return r.text().then(text => {
+              throw new Error(text || 'Ошибка при отправке сообщения');
+            });
+          }
+        })
+        .catch(error => {
+          alert('Ошибка при отправке сообщения: ' + error.message);
+        });
     });
 
     createBtn.addEventListener('click', openCreateModal);

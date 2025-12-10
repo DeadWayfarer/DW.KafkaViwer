@@ -119,4 +119,46 @@ app.MapDelete("/api/brokers/{id:int}", (
     return Results.Ok();
 });
 
+// Send message API
+app.MapPost("/api/messages", async (
+    HttpRequest request,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    try
+    {
+        var body = await request.ReadFromJsonAsync<SendMessageRequest>();
+        if (body == null || string.IsNullOrWhiteSpace(body.Topic))
+        {
+            return Results.BadRequest("Topic is required");
+        }
+
+        // Get topic info
+        var topics = kafkaService.GetTopics(new DW.KafkaViwer.Web.Models.TopicFilter(body.Topic));
+        var topic = topics.FirstOrDefault();
+        if (topic == null)
+        {
+            return Results.BadRequest($"Topic '{body.Topic}' not found");
+        }
+
+        // Create message info
+        var message = new DW.KafkaViwer.Web.Models.TopicMessageInfo(
+            Topic: body.Topic,
+            Partition: 0, // Will be assigned by broker
+            Offset: 0, // Will be assigned by broker
+            Key: body.Key ?? string.Empty,
+            Value: body.Value ?? "{}",
+            TimestampUtc: DateTime.UtcNow);
+
+        kafkaService.SendMessage(topic, message);
+        return Results.Ok();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Error sending message: {ex.Message}");
+    }
+});
+
 app.Run();
+
+// Request model for sending messages
+public record SendMessageRequest(string Topic, string? Key, string Value);

@@ -132,5 +132,13 @@ public class KafkaService
             _brokers.RemoveAt(index);
         }
     }
+
+    public void SendMessage(TopicInfo topic, TopicMessageInfo message)
+    {
+        // Mock implementation - in real scenario, this would send message to Kafka broker
+        // For now, we just log or simulate the operation
+        // In production, you would use a Kafka producer library here
+        Console.WriteLine($"Sending message to topic '{topic.Name}': Key={message.Key}, Value={message.Value}");
+    }
 }
 
