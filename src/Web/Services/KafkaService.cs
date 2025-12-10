@@ -93,5 +93,26 @@ public class KafkaService
             new(filter.TopicName + "-grp", "consumer-3", 25, "Rebalancing")
         };
     }
+
+    private static List<BrokerInfo> _brokers = new()
+    {
+        new BrokerInfo(1, "localhost", 9092, "Active"),
+        new BrokerInfo(2, "localhost", 9093, "Active"),
+        new BrokerInfo(3, "localhost", 9094, "Inactive")
+    };
+
+    public List<BrokerInfo> GetBrokers()
+    {
+        return _brokers.ToList();
+    }
+
+    public void UpdateBroker(BrokerInfo brokerInfo)
+    {
+        var index = _brokers.FindIndex(b => b.Id == brokerInfo.Id);
+        if (index >= 0)
+        {
+            _brokers[index] = brokerInfo;
+        }
+    }
 }
 

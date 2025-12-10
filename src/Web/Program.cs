@@ -82,4 +82,19 @@ app.MapGet("/api/consumers", (
     return Results.Json(items);
 });
 
+// Brokers API
+app.MapGet("/api/brokers", (DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    var brokers = kafkaService.GetBrokers();
+    return Results.Json(brokers);
+});
+
+app.MapPut("/api/brokers", (
+    DW.KafkaViwer.Web.Models.BrokerInfo brokerInfo,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    kafkaService.UpdateBroker(brokerInfo);
+    return Results.Ok();
+});
+
 app.Run();

@@ -73,7 +73,15 @@
       li.textContent = item.title;
       li.dataset.navId = item.id;
       li.className = 'nav-item';
-      li.addEventListener('click', () => openTab(item.id, item.title));
+      li.addEventListener('click', () => {
+        if (item.id === 'brokers') {
+          openTab('broker-view', 'Brokers', { render: renderBrokerView, closable: true });
+        } else if (item.id === 'topic-list-view') {
+          openTab('topic-list-view', 'Topics', { render: renderTopicView, closable: false });
+        } else {
+          openTab(item.id, item.title);
+        }
+      });
       navList.appendChild(li);
     });
   }
@@ -352,6 +360,78 @@
     refreshBtn.addEventListener('click', loadConsumers);
 
     loadConsumers();
+  }
+
+  // --- Broker view ---
+  function renderBrokerView(container) {
+    container.innerHTML = '';
+    container.appendChild(document.querySelector('[data-tab-content="broker-view"]').cloneNode(true));
+
+    const tbody = container.querySelector('#broker-table tbody');
+    const addBtn = container.querySelector('#broker-add-btn');
+
+    const renderRows = (rows) => {
+      tbody.innerHTML = '';
+      rows.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${b.id}</td>
+          <td>${b.host}</td>
+          <td>${b.port}</td>
+          <td>${b.status}</td>
+          <td>
+            <button class="btn-icon btn-edit" data-broker-id="${b.id}" title="Изменить">✏️</button>
+            <button class="btn-icon btn-delete" data-broker-id="${b.id}" title="Удалить">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Add event listeners for action buttons
+      tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const brokerId = parseInt(e.target.dataset.brokerId);
+          const broker = rows.find(b => b.id === brokerId);
+          if (broker) {
+            alert(`Редактирование брокера: ${broker.host}:${broker.port}`);
+            // TODO: Open edit modal/form
+          }
+        });
+      });
+
+      tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const brokerId = parseInt(e.target.dataset.brokerId);
+          if (confirm(`Удалить брокер #${brokerId}?`)) {
+            // TODO: Call delete API
+            loadBrokers();
+          }
+        });
+      });
+    };
+
+    const loadBrokers = () => {
+      fetch('/api/brokers')
+        .then(r => r.json())
+        .then(data => {
+          renderRows(data ?? []);
+        })
+        .catch(() => {
+          const mock = [
+            { id: 1, host: 'localhost', port: 9092, status: 'Active' },
+            { id: 2, host: 'localhost', port: 9093, status: 'Active' },
+            { id: 3, host: 'localhost', port: 9094, status: 'Inactive' }
+          ];
+          renderRows(mock);
+        });
+    };
+
+    addBtn.addEventListener('click', () => {
+      alert('Добавление нового брокера');
+      // TODO: Open add modal/form
+    });
+
+    loadBrokers();
   }
 })();
 
