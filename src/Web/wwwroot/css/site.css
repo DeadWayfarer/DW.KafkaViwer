@@ -30,7 +30,7 @@ body.fluent-body {
   background: rgba(24, 28, 33, 0.8);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding-block: 6px;
+  padding-block: 2px;
 }
 
 .navbar-brand,
@@ -52,6 +52,22 @@ body.fluent-body {
   filter: invert(1);
 }
 
+.navbar {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.navbar-brand {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  margin-right: 12px;
+}
+
+.navbar-nav .nav-link {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
 .glass-panel {
   background: linear-gradient(145deg, var(--surface) 0%, var(--surface-alt) 100%);
   border: 1px solid var(--border);
@@ -69,10 +85,21 @@ body.fluent-body {
 }
 
 .footer {
-  padding: 10px 0;
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1;
   border-top: 1px solid var(--border);
   background: rgba(17, 19, 23, 0.8);
   backdrop-filter: blur(8px);
+}
+.footer a {
+  padding: 0;
+  line-height: 1;
+}
+.footer .container,
+.footer .container-fluid {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .btn-primary {
