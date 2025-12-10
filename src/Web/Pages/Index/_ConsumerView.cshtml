@@ -1,6 +1,12 @@
 <div class="consumer-view" data-tab-content="consumer-view">
     <div class="topic-card glass-panel">
-        <div class="topic-card-title">Консьюмеры</div>
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="topic-card-title mb-0">Консьюмеры</div>
+            <div class="btn-group gap-2">
+                <button id="consumer-refresh-btn" type="button" class="btn btn-outline-primary filter-btn">⟳ Обновить</button>
+            </div>
+        </div>
+        <div class="message-meta" id="consumer-status"></div>
         <div class="topic-table-wrapper">
             <table class="table table-dark table-sm topic-table" id="consumer-table">
                 <thead>

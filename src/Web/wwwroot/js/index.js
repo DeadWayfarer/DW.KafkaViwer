@@ -313,24 +313,45 @@
     container.appendChild(document.querySelector('[data-tab-content="consumer-view"]').cloneNode(true));
 
     const tbody = container.querySelector('#consumer-table tbody');
+    const refreshBtn = container.querySelector('#consumer-refresh-btn');
+    const statusEl = container.querySelector('#consumer-status');
 
-    const mock = [
-      { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Active' },
-      { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Active' },
-      { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Rebalancing' }
-    ];
+    const renderRows = (rows) => {
+      tbody.innerHTML = '';
+      rows.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.group}</td>
+          <td>${m.member}</td>
+          <td>${m.lag}</td>
+          <td>${m.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
 
-    tbody.innerHTML = '';
-    mock.forEach(m => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${m.group}</td>
-        <td>${m.member}</td>
-        <td>${m.lag}</td>
-        <td>${m.status}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+    const loadConsumers = () => {
+      if (statusEl) statusEl.textContent = 'Загрузка...';
+      fetch('/api/consumers?topic=' + encodeURIComponent(topicName))
+        .then(r => r.json())
+        .then(data => {
+          renderRows(data ?? []);
+          if (statusEl) statusEl.textContent = '';
+        })
+        .catch(() => {
+          const mock = [
+            { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Active' },
+            { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Active' },
+            { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Rebalancing' }
+          ];
+          renderRows(mock);
+          if (statusEl) statusEl.textContent = 'Показаны мок-данные';
+        });
+    };
+
+    refreshBtn.addEventListener('click', loadConsumers);
+
+    loadConsumers();
   }
 })();
 

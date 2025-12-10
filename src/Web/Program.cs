@@ -68,4 +68,18 @@ app.MapGet("/api/messages", (
     return Results.Json(messages);
 });
 
+// Consumers API
+app.MapGet("/api/consumers", (
+    string topic,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    if (string.IsNullOrWhiteSpace(topic))
+    {
+        return Results.BadRequest("topic is required");
+    }
+
+    var items = kafkaService.GetConsumerInfo(new DW.KafkaViwer.Web.Models.ConsumerFilter(topic));
+    return Results.Json(items);
+});
+
 app.Run();

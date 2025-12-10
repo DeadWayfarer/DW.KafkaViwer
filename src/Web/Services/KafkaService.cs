@@ -82,5 +82,16 @@ public class KafkaService
 
         return messages;
     }
+
+    public List<ConsumerInfo> GetConsumerInfo(ConsumerFilter filter)
+    {
+        // Mock consumer data
+        return new List<ConsumerInfo>
+        {
+            new(filter.TopicName + "-grp", "consumer-1", 12, "Active"),
+            new(filter.TopicName + "-grp", "consumer-2", 3, "Active"),
+            new(filter.TopicName + "-grp", "consumer-3", 25, "Rebalancing")
+        };
+    }
 }
 
