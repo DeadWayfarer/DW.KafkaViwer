@@ -157,6 +157,8 @@
     const filterBtn = container.querySelector('#topic-filter-btn');
     const tbody = container.querySelector('#topic-table tbody');
 
+    filterInput.value = currentFilter.name ?? '';
+
     const renderRows = (filter = '') => {
       tbody.innerHTML = '';
       topics
