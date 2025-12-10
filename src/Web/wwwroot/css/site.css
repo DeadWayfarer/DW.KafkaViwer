@@ -19,18 +19,63 @@ html {
 }
 
 body.fluent-body {
-  min-height: 100vh;
+  height: 100vh;
   margin: 0;
+  padding: 0;
   color: var(--text);
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+body.fluent-body > header {
+  flex-shrink: 0;
+}
+
+body.fluent-body > .container-fluid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.fluent-body > .container-fluid {
+  padding: 0 !important;
+}
+
+body.fluent-body > .container-fluid > main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.fluent-body > .container-fluid > main.card.glass-panel {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px !important;
+  box-sizing: border-box;
+}
+
 
 .page-shell {
   display: grid;
   grid-template-columns: 240px 1fr;
-  min-height: calc(100vh - 64px);
+  min-height: 0;
+  height: 100%;
   gap: 16px;
+  flex: 1;
+  overflow: hidden;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .sidebar {
@@ -39,6 +84,8 @@ body.fluent-body {
   border-radius: 12px;
   padding: 12px;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-header {
@@ -81,6 +128,8 @@ body.fluent-body {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .tab-shell {
@@ -88,8 +137,10 @@ body.fluent-body {
   border: 1px solid var(--border);
   border-radius: 12px;
   min-height: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .tab-header {
@@ -144,10 +195,13 @@ body.fluent-body {
   padding: 12px;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tab-pane {
   height: 100%;
+  min-height: 0;
 }
 
 .topic-view {
