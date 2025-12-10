@@ -11,9 +11,9 @@
   // Mock data for tabs and topics
   const navItems = [];
   const tabState = {
-    activeId: 'topic-view',
+    activeId: 'topic-list-view',
     tabs: [
-      { id: 'topic-view', title: 'Topics', closable: false, render: renderTopicView }
+      { id: 'topic-list-view', title: 'Topics', closable: false, render: renderTopicView }
     ]
   };
 
@@ -29,7 +29,7 @@
       .then(r => r.json())
       .then(data => {
         topics = data ?? [];
-        if (tabState.activeId === 'topic-view') {
+        if (tabState.activeId === 'topic-list-view') {
           renderTabs();
         }
       })
@@ -44,7 +44,7 @@
           !filter?.name ||
           t.name.toLowerCase().includes(filter.name.toLowerCase())
         );
-        if (tabState.activeId === 'topic-view') {
+        if (tabState.activeId === 'topic-list-view') {
           renderTabs();
         }
       });
@@ -60,7 +60,7 @@
     .catch(() => {
       navItems.splice(0, navItems.length,
         { id: 'overview', title: 'Overview' },
-        { id: 'topics', title: 'Topics' },
+        { id: 'topic-list-view', title: 'Topics' },
         { id: 'settings', title: 'Settings' }
       );
       renderNav();
@@ -125,10 +125,19 @@
     renderTabs();
   }
 
-  function openTab(id, title) {
+  function openTab(id, title, options = {}) {
     const exists = tabState.tabs.find(t => t.id === id);
     if (!exists) {
-      tabState.tabs.push({ id, title, closable: true });
+      tabState.tabs.push({
+        id,
+        title,
+        closable: options.closable ?? true,
+        render: options.render,
+        topic: options.topic
+      });
+    } else {
+      if (options.topic) exists.topic = options.topic;
+      if (options.render) exists.render = options.render;
     }
     activateTab(id);
   }
@@ -152,7 +161,7 @@
   // --- Topic view ---
   function renderTopicView(container) {
     container.innerHTML = '';
-    container.appendChild(document.querySelector('[data-tab-content="topic-view"]').cloneNode(true));
+    container.appendChild(document.querySelector('[data-tab-content="topic-list-view"]').cloneNode(true));
     const filterInput = container.querySelector('#topic-filter-input');
     const filterBtn = container.querySelector('#topic-filter-btn');
     const tbody = container.querySelector('#topic-table tbody');
@@ -171,6 +180,10 @@
             <td>${t.messages.toLocaleString()}</td>
             <td>${t.retentionDays}</td>
           `;
+          tr.addEventListener('click', () => {
+            const tabId = `message-${t.name}`;
+            openTab(tabId, `Messages: ${t.name}`, { render: renderMessageView, topic: t.name });
+          });
           tbody.appendChild(tr);
         });
     };
@@ -193,5 +206,45 @@
   // initial render
   renderTabs();
   loadTopics(currentFilter);
+
+  // --- Message view ---
+  function renderMessageView(container, tab) {
+    const topicName = tab.topic || tab.title.replace('Messages: ', '');
+    container.innerHTML = '';
+    container.appendChild(document.querySelector('[data-tab-content="message-view"]').cloneNode(true));
+
+    const meta = container.querySelector('#message-meta');
+    const tbody = container.querySelector('#message-table tbody');
+    meta.textContent = `Топик: ${topicName}`;
+
+    const renderRows = (rows) => {
+      tbody.innerHTML = '';
+      rows.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.partition}</td>
+          <td>${m.offset}</td>
+          <td>${m.key}</td>
+          <td>${m.value}</td>
+          <td>${new Date(m.timestampUtc).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    fetch('/api/messages?topic=' + encodeURIComponent(topicName))
+      .then(r => r.json())
+      .then(data => renderRows(data ?? []))
+      .catch(() => {
+        const fallback = [{
+          partition: 0,
+          offset: 0,
+          key: 'n/a',
+          value: `No data for ${topicName}`,
+          timestampUtc: new Date().toISOString()
+        }];
+        renderRows(fallback);
+      });
+  }
 })();
 

@@ -28,7 +28,7 @@ app.MapGet("/api/nav", () =>
 {
     var items = new[]
     {
-        new { id = "topic-view", title = "Topics" },
+        new { id = "topic-list-view", title = "Topics" },
         new { id = "consumers", title = "Consumers" },
         new { id = "brokers", title = "Brokers" },
         new { id = "settings", title = "Settings" }
@@ -41,6 +41,18 @@ app.MapGet("/api/topics", (string? name, DW.KafkaViwer.Web.Services.KafkaService
 {
     var topics = kafkaService.GetTopics(new DW.KafkaViwer.Web.Models.TopicFilter(name));
     return Results.Json(topics);
+});
+
+// Topic messages API
+app.MapGet("/api/messages", (string topic, DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    if (string.IsNullOrWhiteSpace(topic))
+    {
+        return Results.BadRequest("topic is required");
+    }
+
+    var messages = kafkaService.GetTopicMessages(new DW.KafkaViwer.Web.Models.TopicMessageFilter(topic));
+    return Results.Json(messages);
 });
 
 app.Run();

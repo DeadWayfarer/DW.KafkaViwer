@@ -219,6 +219,10 @@ body.fluent-body {
   background: rgba(76, 194, 255, 0.05);
 }
 
+.message-meta {
+  color: var(--text-muted);
+}
+
 .fluent-nav {
   background: rgba(24, 28, 33, 0.8);
   backdrop-filter: blur(10px);

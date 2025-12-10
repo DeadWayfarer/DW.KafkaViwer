@@ -25,5 +25,23 @@ public class KafkaService
 
         return data;
     }
+
+    public List<TopicMessageInfo> GetTopicMessages(TopicMessageFilter filter)
+    {
+        var rnd = new Random(42);
+        var messages = new List<TopicMessageInfo>();
+        for (var i = 0; i < 25; i++)
+        {
+            messages.Add(new TopicMessageInfo(
+                filter.TopicName,
+                Partition: rnd.Next(0, 3),
+                Offset: 1_000 + i,
+                Key: $"key-{i}",
+                Value: $"Message payload #{i} for {filter.TopicName}",
+                TimestampUtc: DateTime.UtcNow.AddSeconds(-rnd.Next(0, 10_000))));
+        }
+
+        return messages;
+    }
 }
 
