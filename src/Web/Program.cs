@@ -2,6 +2,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddSingleton<DW.KafkaViwer.Web.Services.KafkaService>();
 
 var app = builder.Build();
 
@@ -33,6 +34,13 @@ app.MapGet("/api/nav", () =>
         new { id = "settings", title = "Settings" }
     };
     return Results.Json(items);
+});
+
+// Mock topics API backed by KafkaService
+app.MapGet("/api/topics", (DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    var topics = kafkaService.GetTopics();
+    return Results.Json(topics);
 });
 
 app.Run();

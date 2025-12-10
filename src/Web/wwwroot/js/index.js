@@ -17,13 +17,31 @@
     ]
   };
 
-  const topics = [
-    { name: 'payments', partitions: 12, messages: 152340, retentionDays: 7 },
-    { name: 'notifications', partitions: 8, messages: 83412, retentionDays: 3 },
-    { name: 'orders', partitions: 6, messages: 45012, retentionDays: 14 },
-    { name: 'user-updates', partitions: 4, messages: 32001, retentionDays: 10 },
-    { name: 'audit-log', partitions: 3, messages: 9512, retentionDays: 30 }
-  ];
+  let topics = [];
+
+  // Load topics from API (with fallback)
+  const loadTopics = () => {
+    return fetch('/api/topics')
+      .then(r => r.json())
+      .then(data => {
+        topics = data ?? [];
+        if (tabState.activeId === 'topic-view') {
+          renderTabs();
+        }
+      })
+      .catch(() => {
+        topics = [
+          { name: 'payments', partitions: 12, messages: 152340, retentionDays: 7 },
+          { name: 'notifications', partitions: 8, messages: 83412, retentionDays: 3 },
+          { name: 'orders', partitions: 6, messages: 45012, retentionDays: 14 },
+          { name: 'user-updates', partitions: 4, messages: 32001, retentionDays: 10 },
+          { name: 'audit-log', partitions: 3, messages: 9512, retentionDays: 30 }
+        ];
+        if (tabState.activeId === 'topic-view') {
+          renderTabs();
+        }
+      });
+  };
 
   // --- Navigation ---
   fetch('/api/nav')
@@ -153,5 +171,6 @@
 
   // initial render
   renderTabs();
+  loadTopics();
 })();
 
