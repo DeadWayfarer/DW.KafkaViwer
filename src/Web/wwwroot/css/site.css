@@ -575,3 +575,59 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   cursor: pointer;
   user-select: none;
 }
+
+/* CodeMirror styles */
+.CodeMirror {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt) !important;
+  color: var(--text) !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.CodeMirror-gutters {
+  background: var(--surface) !important;
+  border-right: 1px solid var(--border) !important;
+  width: 50px !important;
+  left: -10px !important;
+}
+
+.CodeMirror-linenumber {
+  color: var(--text-muted) !important;
+  padding: 0 8px !important;
+  min-width: 34px !important;
+  text-align: right !important;
+  display: inline-block !important;
+  left: -60px !important;
+}
+
+.CodeMirror-lines {
+  padding-left: 50px !important;
+}
+
+.CodeMirror-scroll {
+  padding-left: 0 !important;
+}
+
+.CodeMirror-cursor {
+  border-left: 1px solid var(--accent) !important;
+}
+
+.CodeMirror-selected {
+  background: rgba(76, 194, 255, 0.2) !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+  background: rgba(76, 194, 255, 0.3) !important;
+}
+
+.CodeMirror-matchingbracket {
+  background: rgba(76, 194, 255, 0.3) !important;
+  color: var(--accent) !important;
+}
+
+.CodeMirror-nonmatchingbracket {
+  background: rgba(255, 68, 68, 0.3) !important;
+  color: #ff4444 !important;
+}

@@ -8,6 +8,7 @@ public class KafkaService
     {
         var data = new List<TopicInfo>
         {
+            new("test", 12, 152_340, 7),
             new("payments", 12, 152_340, 7),
             new("notifications", 8, 83_412, 3),
             new("orders", 6, 45_012, 14),

@@ -1,3 +1,6 @@
+
+
+
 (() => {
   const navList = document.getElementById('nav-list');
   const tabHeader = document.getElementById('tab-header');
@@ -312,10 +315,140 @@
       if (e.key === 'Enter') loadMessages();
     });
 
-    // Placeholder for create message
-    createBtn.addEventListener('click', () => {
-      alert('Создание сообщения: пока мок-реализация');
+    // Create message modal
+    let createModal = document.getElementById('create-message-modal');
+    let messageEditor = null;
+    
+    if (!createModal) {
+      createModal = document.createElement('div');
+      createModal.id = 'create-message-modal';
+      createModal.className = 'modal-overlay';
+      createModal.style.display = 'none';
+      createModal.innerHTML = `
+        <div class="modal-content glass-panel" style="max-width: 700px;">
+          <div class="modal-header">
+            <h3>Создать сообщение</h3>
+            <button type="button" class="modal-close" id="create-message-close">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="create-message-form">
+              <div class="form-group">
+                <label class="form-label" for="msg-key-type">Тип для Ключа</label>
+                <select class="form-select" id="msg-key-type" required>
+                  <option value="Null">Null</option>
+                  <option value="Number">Number</option>
+                  <option value="String" selected>String</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="msg-key-value">Ключ</label>
+                <input class="form-control" id="msg-key-value" type="text" placeholder="Введите ключ..." />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="msg-message-value">Сообщение (JSON)</label>
+                <textarea class="form-control" id="msg-message-value" rows="10" placeholder='{"key": "value"}'></textarea>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="create-message-cancel">Отмена</button>
+            <button type="button" class="btn btn-primary" id="create-message-apply">Создать</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(createModal);
+    }
+
+    const modalTitle = createModal.querySelector('h3');
+    const modalClose = createModal.querySelector('#create-message-close');
+    const modalCancel = createModal.querySelector('#create-message-cancel');
+    const modalApply = createModal.querySelector('#create-message-apply');
+    const messageForm = createModal.querySelector('#create-message-form');
+    const keyTypeInput = createModal.querySelector('#msg-key-type');
+    const keyValueInput = createModal.querySelector('#msg-key-value');
+    const messageValueInput = createModal.querySelector('#msg-message-value');
+
+    const openCreateModal = () => {
+      keyTypeInput.value = 'String';
+      keyValueInput.value = '';
+      messageValueInput.value = '{\n  \n}';
+      
+      // Initialize CodeMirror if not already initialized
+      if (!messageEditor) {
+        messageEditor = CodeMirror.fromTextArea(messageValueInput, {
+          mode: 'application/json',
+          theme: 'dracula',
+          lineNumbers: true,
+          indentUnit: 2,
+          indentWithTabs: false,
+          autoCloseBrackets: true,
+          matchBrackets: true,
+          lineWrapping: true
+        });
+        messageEditor.setSize('100%', '300px');
+      } else {
+        messageEditor.setValue('{\n  \n}');
+        messageEditor.refresh();
+      }
+      
+      createModal.style.display = 'flex';
+    };
+
+    const closeCreateModal = () => {
+      createModal.style.display = 'none';
+      messageForm.reset();
+    };
+
+    modalClose.addEventListener('click', closeCreateModal);
+    modalCancel.addEventListener('click', closeCreateModal);
+    createModal.addEventListener('click', (e) => {
+      if (e.target === createModal) {
+        closeCreateModal();
+      }
     });
+
+    modalApply.addEventListener('click', () => {
+      let messageValue = messageEditor ? messageEditor.getValue() : messageValueInput.value;
+      
+      // Validate JSON
+      try {
+        if (messageValue.trim()) {
+          JSON.parse(messageValue);
+        }
+      } catch (e) {
+        alert('Ошибка: Сообщение должно быть валидным JSON');
+        return;
+      }
+
+      // Get key value based on type
+      let keyValue = null;
+      if (keyTypeInput.value === 'Null') {
+        keyValue = null;
+      } else if (keyTypeInput.value === 'Number') {
+        const num = parseFloat(keyValueInput.value);
+        if (isNaN(num)) {
+          alert('Ошибка: Ключ должен быть числом');
+          return;
+        }
+        keyValue = num;
+      } else {
+        keyValue = keyValueInput.value.trim() || null;
+      }
+
+      const messageData = {
+        topic: topicName,
+        key: keyValue,
+        value: messageValue.trim() || '{}'
+      };
+
+      // TODO: Send to API
+      console.log('Creating message:', messageData);
+      alert('Сообщение создано (мок-реализация)');
+      closeCreateModal();
+      loadMessages(); // Reload messages
+    });
+
+    createBtn.addEventListener('click', openCreateModal);
 
     consumersBtn.addEventListener('click', () => {
       const tabId = `consumers-${topicName}`;
