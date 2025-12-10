@@ -1,0 +1,122 @@
+# ---- Build outputs ----
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Oo]ut/
+wwwroot/lib/
+
+# ---- IDE ----
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ---- ReSharper / Rider ----
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+*.sln.iml
+
+# ---- NuGet ----
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+.nuget/
+
+# ---- ASP.NET / .NET ----
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ---- Logs / temp ----
+*.log
+*.tlog
+*.cache
+*.tmp
+*.pid
+[Tt]emp/
+[Pp]ublishProfiles/
+
+# ---- User secrets ----
+secrets.json
+
+# ---- Testing ----
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*.stackdump
+# ---- Core build artifacts ----
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Oo]ut/
+
+# ---- VS/IDE metadata ----
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ---- ASP.NET / .NET ----
+project.lock.json
+project.fragment.lock.json
+artifacts/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# ---- Rider ----
+.idea/
+*.sln.iml
+
+# ---- NuGet ----
+*.nupkg
+*.snupkg
+packages/
+*.nuspec
+.nuget/
+
+# ---- Logs / temp ----
+*.log
+*.tlog
+*.cache
+*.tmp
+*.pid
+[Tt]emp/
+[Pp]ublishProfiles/
+
+# ---- User secrets ----
+secrets.json
+
+# ---- Coverage / testing ----
+*.coverage
+*.coveragexml
+TestResults/
+*.trx
+
+# ---- OS cruft ----
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*.stackdump
+
+# ---- Build outputs (generated) ----
+wwwroot/lib/
+
+
