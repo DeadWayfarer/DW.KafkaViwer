@@ -44,14 +44,27 @@ app.MapGet("/api/topics", (string? name, DW.KafkaViwer.Web.Services.KafkaService
 });
 
 // Topic messages API
-app.MapGet("/api/messages", (string topic, DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+app.MapGet("/api/messages", (
+    string topic,
+    string? searchType,
+    int? limit,
+    DateTime? from,
+    DateTime? to,
+    string? query,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
 {
     if (string.IsNullOrWhiteSpace(topic))
     {
         return Results.BadRequest("topic is required");
     }
 
-    var messages = kafkaService.GetTopicMessages(new DW.KafkaViwer.Web.Models.TopicMessageFilter(topic));
+    var messages = kafkaService.GetTopicMessages(new DW.KafkaViwer.Web.Models.TopicMessageFilter(
+        TopicName: topic,
+        SearchType: searchType ?? "newest",
+        Limit: limit,
+        From: from,
+        To: to,
+        Query: query));
     return Results.Json(messages);
 });
 

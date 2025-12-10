@@ -215,7 +215,30 @@
 
     const meta = container.querySelector('#message-meta');
     const tbody = container.querySelector('#message-table tbody');
+    const searchTypeEl = container.querySelector('#msg-search-type');
+    const limitEl = container.querySelector('#msg-limit');
+    const fromEl = container.querySelector('#msg-from');
+    const toEl = container.querySelector('#msg-to');
+    const filterEl = container.querySelector('#msg-filter');
+    const searchBtn = container.querySelector('#msg-search-btn');
+    const createBtn = container.querySelector('#msg-create-btn');
+
     meta.textContent = `Топик: ${topicName}`;
+
+    tab.messageFilter = tab.messageFilter || {
+      searchType: 'newest',
+      limit: 20,
+      from: '',
+      to: '',
+      query: ''
+    };
+
+    // initialize UI from state
+    searchTypeEl.value = tab.messageFilter.searchType || 'newest';
+    limitEl.value = tab.messageFilter.limit ?? 20;
+    fromEl.value = tab.messageFilter.from || '';
+    toEl.value = tab.messageFilter.to || '';
+    filterEl.value = tab.messageFilter.query || '';
 
     const renderRows = (rows) => {
       tbody.innerHTML = '';
@@ -232,19 +255,49 @@
       });
     };
 
-    fetch('/api/messages?topic=' + encodeURIComponent(topicName))
-      .then(r => r.json())
-      .then(data => renderRows(data ?? []))
-      .catch(() => {
-        const fallback = [{
-          partition: 0,
-          offset: 0,
-          key: 'n/a',
-          value: `No data for ${topicName}`,
-          timestampUtc: new Date().toISOString()
-        }];
-        renderRows(fallback);
-      });
+    const loadMessages = () => {
+      const params = new URLSearchParams();
+      params.append('topic', topicName);
+      if (searchTypeEl.value) params.append('searchType', searchTypeEl.value);
+      if (limitEl.value) params.append('limit', limitEl.value);
+      if (fromEl.value) params.append('from', fromEl.value);
+      if (toEl.value) params.append('to', toEl.value);
+      if (filterEl.value) params.append('query', filterEl.value);
+
+      tab.messageFilter = {
+        searchType: searchTypeEl.value,
+        limit: limitEl.value,
+        from: fromEl.value,
+        to: toEl.value,
+        query: filterEl.value
+      };
+
+      fetch('/api/messages?' + params.toString())
+        .then(r => r.json())
+        .then(data => renderRows(data ?? []))
+        .catch(() => {
+          const fallback = [{
+            partition: 0,
+            offset: 0,
+            key: 'n/a',
+            value: `No data for ${topicName}`,
+            timestampUtc: new Date().toISOString()
+          }];
+          renderRows(fallback);
+        });
+    };
+
+    searchBtn.addEventListener('click', loadMessages);
+    filterEl.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loadMessages();
+    });
+
+    // Placeholder for create message
+    createBtn.addEventListener('click', () => {
+      alert('Создание сообщения: пока мок-реализация');
+    });
+
+    loadMessages();
   }
 })();
 

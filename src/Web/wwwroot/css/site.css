@@ -223,6 +223,22 @@ body.fluent-body {
   color: var(--text-muted);
 }
 
+.message-filter-card {
+  gap: 16px;
+}
+
+.message-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.message-filter-grid .btn-group {
+  display: flex;
+  flex-wrap: wrap;
+}
+
 .fluent-nav {
   background: rgba(24, 28, 33, 0.8);
   backdrop-filter: blur(10px);

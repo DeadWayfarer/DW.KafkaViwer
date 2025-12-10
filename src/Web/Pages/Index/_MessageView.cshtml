@@ -1,6 +1,45 @@
 <div class="message-view" data-tab-content="message-view">
-    <div class="topic-card glass-panel">
-        <div class="topic-card-title">Сообщения</div>
+    <div class="topic-card glass-panel message-filter-card">
+        <div class="topic-card-title">Фильтр сообщений</div>
+        <div class="message-filter-grid">
+            <div class="form-group">
+                <label class="form-label" for="msg-search-type">Тип поиска</label>
+                <select class="form-select" id="msg-search-type">
+                    <option value="newest">Сначала новые</option>
+                    <option value="oldest">Сначала старые</option>
+                    <option value="onlyNew">Только новые</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="msg-limit">Кол-во загрузить</label>
+                <input class="form-control" list="msg-limit-list" id="msg-limit" type="number" min="1" step="1" value="20" />
+                <datalist id="msg-limit-list">
+                    <option value="1" />
+                    <option value="5" />
+                    <option value="20" />
+                    <option value="100" />
+                    <option value="500" />
+                </datalist>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="msg-from">Загрузить с</label>
+                <input class="form-control" id="msg-from" type="datetime-local" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="msg-to">Загрузить по</label>
+                <input class="form-control" id="msg-to" type="datetime-local" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="msg-filter">Фильтр</label>
+                <input class="form-control" id="msg-filter" type="text" placeholder="Введите текст..." />
+            </div>
+            <div class="form-group align-end">
+                <div class="btn-group gap-2">
+                    <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
+                    <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Создать</button>
+                </div>
+            </div>
+        </div>
         <div class="message-meta" id="message-meta"></div>
     </div>
     <div class="topic-card glass-panel">

@@ -41,6 +41,45 @@ public class KafkaService
                 TimestampUtc: DateTime.UtcNow.AddSeconds(-rnd.Next(0, 10_000))));
         }
 
+        // Apply "only new" as last 5 minutes for mock
+        if (filter.SearchType == "onlyNew")
+        {
+            var cutoff = DateTime.UtcNow.AddMinutes(-5);
+            messages = messages.Where(m => m.TimestampUtc >= cutoff).ToList();
+        }
+
+        // Apply time window
+        if (filter.From.HasValue)
+        {
+            messages = messages.Where(m => m.TimestampUtc >= filter.From.Value).ToList();
+        }
+        if (filter.To.HasValue)
+        {
+            messages = messages.Where(m => m.TimestampUtc <= filter.To.Value).ToList();
+        }
+
+        // Apply text query to key/value
+        if (!string.IsNullOrWhiteSpace(filter.Query))
+        {
+            var term = filter.Query.Trim().ToLowerInvariant();
+            messages = messages.Where(m =>
+                m.Key.ToLowerInvariant().Contains(term) ||
+                m.Value.ToLowerInvariant().Contains(term)).ToList();
+        }
+
+        // Sort
+        messages = filter.SearchType switch
+        {
+            "oldest" => messages.OrderBy(m => m.TimestampUtc).ToList(),
+            _ => messages.OrderByDescending(m => m.TimestampUtc).ToList()
+        };
+
+        // Limit
+        if (filter.Limit.HasValue && filter.Limit.Value > 0)
+        {
+            messages = messages.Take(filter.Limit.Value).ToList();
+        }
+
         return messages;
     }
 }
