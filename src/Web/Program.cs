@@ -89,11 +89,33 @@ app.MapGet("/api/brokers", (DW.KafkaViwer.Web.Services.KafkaService kafkaService
     return Results.Json(brokers);
 });
 
+app.MapPost("/api/brokers", (
+    DW.KafkaViwer.Web.Models.BrokerInfo brokerInfo,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    kafkaService.AddBroker(brokerInfo);
+    return Results.Ok();
+});
+
 app.MapPut("/api/brokers", (
     DW.KafkaViwer.Web.Models.BrokerInfo brokerInfo,
     DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
 {
     kafkaService.UpdateBroker(brokerInfo);
+    return Results.Ok();
+});
+
+app.MapDelete("/api/brokers/{id:int}", (
+    int id,
+    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+{
+    var brokers = kafkaService.GetBrokers();
+    var broker = brokers.FirstOrDefault(b => b.Id == id);
+    if (broker == null)
+    {
+        return Results.NotFound();
+    }
+    kafkaService.DeleteBroker(broker);
     return Results.Ok();
 });
 

@@ -370,7 +370,131 @@
     const tbody = container.querySelector('#broker-table tbody');
     const addBtn = container.querySelector('#broker-add-btn');
 
+    // Create modal dynamically
+    let modal = document.getElementById('broker-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'broker-modal';
+      modal.className = 'modal-overlay';
+      modal.style.display = 'none';
+      modal.innerHTML = `
+        <div class="modal-content glass-panel">
+          <div class="modal-header">
+            <h3 id="broker-modal-title">Добавить брокер</h3>
+            <button type="button" class="modal-close" id="broker-modal-close">×</button>
+          </div>
+          <div class="modal-body">
+            <form id="broker-form">
+              <input type="hidden" id="broker-id" />
+              <div class="form-group">
+                <label class="form-label" for="broker-host">Host</label>
+                <input class="form-control" id="broker-host" type="text" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="broker-port">Port</label>
+                <input class="form-control" id="broker-port" type="number" min="1" max="65535" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="broker-status">Status</label>
+                <select class="form-select" id="broker-status" required>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                  <option value="Connecting">Connecting</option>
+                  <option value="Error">Error</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="broker-modal-cancel">Отмена</button>
+            <button type="button" class="btn btn-primary" id="broker-modal-apply">Применить</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    const modalTitle = document.getElementById('broker-modal-title');
+    const modalClose = document.getElementById('broker-modal-close');
+    const modalCancel = document.getElementById('broker-modal-cancel');
+    const modalApply = document.getElementById('broker-modal-apply');
+    const brokerForm = document.getElementById('broker-form');
+    const brokerIdInput = document.getElementById('broker-id');
+    const brokerHostInput = document.getElementById('broker-host');
+    const brokerPortInput = document.getElementById('broker-port');
+    const brokerStatusInput = document.getElementById('broker-status');
+
+    let currentBrokers = [];
+
+    const openModal = (broker = null) => {
+      if (broker) {
+        modalTitle.textContent = 'Изменить брокер';
+        brokerIdInput.value = broker.id;
+        brokerHostInput.value = broker.host;
+        brokerPortInput.value = broker.port;
+        brokerStatusInput.value = broker.status;
+      } else {
+        modalTitle.textContent = 'Добавить брокер';
+        brokerIdInput.value = '';
+        brokerHostInput.value = '';
+        brokerPortInput.value = '';
+        brokerStatusInput.value = 'Active';
+      }
+      modal.style.display = 'flex';
+    };
+
+    const closeModal = () => {
+      modal.style.display = 'none';
+      brokerForm.reset();
+    };
+
+    modalClose.addEventListener('click', closeModal);
+    modalCancel.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    modalApply.addEventListener('click', () => {
+      if (!brokerForm.checkValidity()) {
+        brokerForm.reportValidity();
+        return;
+      }
+
+      const brokerData = {
+        id: brokerIdInput.value ? parseInt(brokerIdInput.value) : 0,
+        host: brokerHostInput.value.trim(),
+        port: parseInt(brokerPortInput.value),
+        status: brokerStatusInput.value
+      };
+
+      const isEdit = brokerIdInput.value !== '';
+      const url = isEdit ? '/api/brokers' : '/api/brokers';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(brokerData)
+      })
+        .then(r => {
+          if (r.ok) {
+            closeModal();
+            loadBrokers();
+          } else {
+            alert('Ошибка при сохранении брокера');
+          }
+        })
+        .catch(() => {
+          alert('Ошибка при сохранении брокера');
+        });
+    });
+
     const renderRows = (rows) => {
+      currentBrokers = rows;
       tbody.innerHTML = '';
       rows.forEach(b => {
         const tr = document.createElement('tr');
@@ -393,8 +517,7 @@
           const brokerId = parseInt(e.target.dataset.brokerId);
           const broker = rows.find(b => b.id === brokerId);
           if (broker) {
-            alert(`Редактирование брокера: ${broker.host}:${broker.port}`);
-            // TODO: Open edit modal/form
+            openModal(broker);
           }
         });
       });
@@ -402,9 +525,21 @@
       tbody.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const brokerId = parseInt(e.target.dataset.brokerId);
-          if (confirm(`Удалить брокер #${brokerId}?`)) {
-            // TODO: Call delete API
-            loadBrokers();
+          const broker = rows.find(b => b.id === brokerId);
+          if (broker && confirm(`Удалить брокер ${broker.host}:${broker.port}?`)) {
+            fetch(`/api/brokers/${brokerId}`, {
+              method: 'DELETE'
+            })
+              .then(r => {
+                if (r.ok) {
+                  loadBrokers();
+                } else {
+                  alert('Ошибка при удалении брокера');
+                }
+              })
+              .catch(() => {
+                alert('Ошибка при удалении брокера');
+              });
           }
         });
       });
@@ -427,8 +562,7 @@
     };
 
     addBtn.addEventListener('click', () => {
-      alert('Добавление нового брокера');
-      // TODO: Open add modal/form
+      openModal();
     });
 
     loadBrokers();

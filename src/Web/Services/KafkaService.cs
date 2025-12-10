@@ -114,5 +114,21 @@ public class KafkaService
             _brokers[index] = brokerInfo;
         }
     }
+
+    public void AddBroker(BrokerInfo brokerInfo)
+    {
+        var newId = _brokers.Count > 0 ? _brokers.Max(b => b.Id) + 1 : 1;
+        var newBroker = new BrokerInfo(newId, brokerInfo.Host, brokerInfo.Port, brokerInfo.Status);
+        _brokers.Add(newBroker);
+    }
+
+    public void DeleteBroker(BrokerInfo brokerInfo)
+    {
+        var index = _brokers.FindIndex(b => b.Id == brokerInfo.Id);
+        if (index >= 0)
+        {
+            _brokers.RemoveAt(index);
+        }
+    }
 }
 
