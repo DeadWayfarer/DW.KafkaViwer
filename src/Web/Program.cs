@@ -2,7 +2,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddSingleton<DW.KafkaViwer.Web.Services.KafkaService>();
+
+// Configure brokers from appsettings
+var brokersSection = builder.Configuration.GetSection("Brokers");
+var brokers = brokersSection.Get<List<DW.KafkaViwer.Web.Models.BrokerInfo>>() ?? new List<DW.KafkaViwer.Web.Models.BrokerInfo>();
+
+// Register KafkaService with brokers from configuration
+builder.Services.AddSingleton<DW.KafkaViwer.Web.Services.KafkaService>(sp => 
+    new DW.KafkaViwer.Web.Services.KafkaService(brokers));
 
 var app = builder.Build();
 

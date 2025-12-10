@@ -4,6 +4,13 @@ namespace DW.KafkaViwer.Web.Services;
 
 public class KafkaService
 {
+    private readonly List<BrokerInfo> _brokers;
+
+    public KafkaService(List<BrokerInfo> brokers)
+    {
+        _brokers = brokers ?? new List<BrokerInfo>();
+    }
+
     public List<TopicInfo> GetTopics(TopicFilter filter)
     {
         var data = new List<TopicInfo>
@@ -94,13 +101,6 @@ public class KafkaService
             new(filter.TopicName + "-grp", "consumer-3", 25, "Rebalancing")
         };
     }
-
-    private static List<BrokerInfo> _brokers = new()
-    {
-        new BrokerInfo(1, "Основной брокер", "localhost", 9092, "Active", "client-1", null, null),
-        new BrokerInfo(2, "Резервный брокер", "localhost", 9093, "Active", null, null, null),
-        new BrokerInfo(3, "Тестовый брокер", "localhost", 9094, "Inactive", "client-3", "secret-3", "https://oidc.example.com")
-    };
 
     public List<BrokerInfo> GetBrokers()
     {
