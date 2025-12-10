@@ -2,6 +2,7 @@ namespace DW.KafkaViwer.Web.Models;
 
 public record TopicMessageFilter(
     string TopicName,
+    int BrokerId,
     string SearchType = "newest",
     int? Limit = null,
     DateTime? From = null,

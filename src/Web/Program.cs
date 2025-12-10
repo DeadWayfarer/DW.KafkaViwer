@@ -3,6 +3,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
+// Configure JSON serialization to use camelCase
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
+
 // Configure brokers from appsettings
 var brokersSection = builder.Configuration.GetSection("Brokers");
 var brokers = brokersSection.Get<List<DW.KafkaViwer.Web.Models.BrokerInfo>>() ?? new List<DW.KafkaViwer.Web.Models.BrokerInfo>();
@@ -47,12 +53,16 @@ app.MapGet("/api/nav", () =>
 app.MapGet("/api/topics", (string? name, DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
 {
     var topics = kafkaService.GetTopics(new DW.KafkaViwer.Web.Models.TopicFilter(name));
-    return Results.Json(topics);
+    return Results.Json(topics, new System.Text.Json.JsonSerializerOptions 
+    { 
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase 
+    });
 });
 
 // Topic messages API
 app.MapGet("/api/messages", (
     string topic,
+    int? brokerId,
     string? searchType,
     int? limit,
     DateTime? from,
@@ -65,8 +75,14 @@ app.MapGet("/api/messages", (
         return Results.BadRequest("topic is required");
     }
 
+    if (!brokerId.HasValue)
+    {
+        return Results.BadRequest("brokerId is required");
+    }
+
     var messages = kafkaService.GetTopicMessages(new DW.KafkaViwer.Web.Models.TopicMessageFilter(
         TopicName: topic,
+        BrokerId: brokerId.Value,
         SearchType: searchType ?? "newest",
         Limit: limit,
         From: from,

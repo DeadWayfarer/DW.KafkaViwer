@@ -152,11 +152,13 @@
         title,
         closable: options.closable ?? true,
         render: options.render,
-        topic: options.topic
+        topic: options.topic,
+        brokerId: options.brokerId
       });
     } else {
       if (options.topic) exists.topic = options.topic;
       if (options.render) exists.render = options.render;
+      if (options.brokerId !== undefined) exists.brokerId = options.brokerId;
     }
     activateTab(id);
   }
@@ -201,7 +203,15 @@
             tr.classList.add('active');
             
             const tabId = `message-${t.name}`;
-            openTab(tabId, `Сообщения: ${t.name}`, { render: renderMessageView, topic: t.name });
+            // Try different property names for brokerId
+            const brokerId = t.brokerId ?? t.BrokerId ?? t.brokerid;
+            console.log('Topic data:', t, 'BrokerId:', brokerId);
+            if (!brokerId && brokerId !== 0) {
+              console.error('BrokerId not found for topic:', t);
+              alert('Ошибка: Не удалось определить ID брокера для топика. Проверьте консоль для деталей.');
+              return;
+            }
+            openTab(tabId, `Сообщения: ${t.name}`, { render: renderMessageView, topic: t.name, brokerId: brokerId });
           });
           tbody.appendChild(tr);
         });
@@ -229,6 +239,16 @@
   // --- Message view ---
   function renderMessageView(container, tab) {
     const topicName = tab.topic || tab.title.replace('Сообщения: ', '');
+    const brokerId = tab.brokerId;
+    
+    console.log('renderMessageView called with:', { topicName, brokerId, tab });
+    
+    if (!brokerId && brokerId !== 0) {
+      console.error('BrokerId is required for loading messages. Tab data:', tab);
+      container.innerHTML = '<div class="alert alert-danger">Ошибка: Не указан ID брокера для загрузки сообщений. Проверьте консоль для деталей.</div>';
+      return;
+    }
+    
     container.innerHTML = '';
     container.appendChild(document.querySelector('[data-tab-content="message-view"]').cloneNode(true));
 
@@ -282,8 +302,20 @@
     };
 
     const loadMessages = () => {
+      if (!brokerId && brokerId !== 0) {
+        console.error('BrokerId is required. Topic:', topicName, 'Tab:', tab);
+        container.innerHTML = '<div class="alert alert-danger">Ошибка: Не указан ID брокера для загрузки сообщений</div>';
+        return;
+      }
+      
+      console.log('Loading messages for topic:', topicName, 'brokerId:', brokerId);
+      
+      // Show loading state
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Загрузка...</td></tr>';
+      
       const params = new URLSearchParams();
       params.append('topic', topicName);
+      params.append('brokerId', brokerId.toString());
       if (searchTypeEl.value) params.append('searchType', searchTypeEl.value);
       if (limitEl.value) params.append('limit', limitEl.value);
       if (fromEl.value) params.append('from', fromEl.value);
@@ -298,15 +330,30 @@
         query: filterEl.value
       };
 
-      fetch('/api/messages?' + params.toString())
-        .then(r => r.json())
-        .then(data => renderRows(data ?? []))
-        .catch(() => {
+      const url = '/api/messages?' + params.toString();
+      console.log('Fetching messages from:', url);
+
+      fetch(url)
+        .then(r => {
+          console.log('Response status:', r.status);
+          if (!r.ok) {
+            return r.text().then(text => {
+              throw new Error(`HTTP ${r.status}: ${text}`);
+            });
+          }
+          return r.json();
+        })
+        .then(data => {
+          console.log('Received messages:', data);
+          renderRows(data ?? []);
+        })
+        .catch(error => {
+          console.error('Error loading messages:', error);
           const fallback = [{
             partition: 0,
             offset: 0,
             key: 'н/д',
-            value: `Нет данных для ${topicName}`,
+            value: `Ошибка загрузки: ${error.message}`,
             timestampUtc: new Date().toISOString()
           }];
           renderRows(fallback);
