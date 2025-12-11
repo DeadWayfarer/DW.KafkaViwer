@@ -530,13 +530,35 @@
       if (e.key === 'Enter') loadMessages();
     });
 
-    // Create message modal
-    let createModal = document.getElementById('create-message-modal');
+    // Create message modal - use single global modal to avoid duplicates
+    const modalId = 'create-message-modal';
+    let createModal = document.getElementById(modalId);
     let messageEditor = null;
+    
+    // Clean up any existing CodeMirror instances in the modal
+    if (createModal) {
+      const existingTextarea = createModal.querySelector('#msg-message-value');
+      if (existingTextarea) {
+        // Check if CodeMirror wrapper exists
+        const cmWrapper = existingTextarea.nextElementSibling;
+        if (cmWrapper && cmWrapper.classList.contains('CodeMirror')) {
+          // Try to get CodeMirror instance and destroy it
+          try {
+            const cmInstance = existingTextarea.CodeMirror || cmWrapper.CodeMirror;
+            if (cmInstance) {
+              cmInstance.toTextArea();
+            }
+          } catch (e) {
+            // If we can't get the instance, remove the wrapper manually
+            cmWrapper.remove();
+          }
+        }
+      }
+    }
     
     if (!createModal) {
       createModal = document.createElement('div');
-      createModal.id = 'create-message-modal';
+      createModal.id = modalId;
       createModal.className = 'modal-overlay';
       createModal.style.display = 'none';
       createModal.innerHTML = `
@@ -582,34 +604,73 @@
     const keyTypeInput = createModal.querySelector('#msg-key-type');
     const keyValueInput = createModal.querySelector('#msg-key-value');
     const messageValueInput = createModal.querySelector('#msg-message-value');
-
+    
     const openCreateModal = () => {
+      // Destroy existing CodeMirror instance if any
+      if (messageEditor) {
+        try {
+          messageEditor.toTextArea();
+        } catch (e) {
+          console.warn('Error destroying existing CodeMirror:', e);
+        }
+        messageEditor = null;
+      }
+      
+      // Also check for any orphaned CodeMirror wrappers
+      const existingCmWrapper = messageValueInput.nextElementSibling;
+      if (existingCmWrapper && existingCmWrapper.classList.contains('CodeMirror')) {
+        existingCmWrapper.remove();
+      }
+      
+      // Reset form values
       keyTypeInput.value = 'String';
       keyValueInput.value = '';
       messageValueInput.value = '{\n  \n}';
       
-      // Initialize CodeMirror if not already initialized
-      if (!messageEditor) {
-        messageEditor = CodeMirror.fromTextArea(messageValueInput, {
-          mode: 'application/json',
-          theme: 'dracula',
-          lineNumbers: true,
-          indentUnit: 2,
-          indentWithTabs: false,
-          autoCloseBrackets: true,
-          matchBrackets: true,
-          lineWrapping: true
-        });
-        messageEditor.setSize('100%', '300px');
-      } else {
-        messageEditor.setValue('{\n  \n}');
-        messageEditor.refresh();
-      }
-      
+      // Show modal first
       createModal.style.display = 'flex';
+      
+      // Create new CodeMirror instance after modal is visible
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        try {
+          messageEditor = CodeMirror.fromTextArea(messageValueInput, {
+            mode: 'application/json',
+            theme: 'dracula',
+            lineNumbers: true,
+            indentUnit: 2,
+            indentWithTabs: false,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            lineWrapping: true
+          });
+          messageEditor.setSize('100%', '300px');
+          messageEditor.setValue('{\n  \n}');
+          
+          // Force refresh to ensure proper rendering
+          setTimeout(() => {
+            if (messageEditor) {
+              messageEditor.refresh();
+              messageEditor.focus();
+            }
+          }, 50);
+        } catch (e) {
+          console.error('Error initializing CodeMirror:', e);
+        }
+      });
     };
 
     const closeCreateModal = () => {
+      // Destroy CodeMirror instance when closing modal
+      if (messageEditor) {
+        try {
+          messageEditor.toTextArea();
+        } catch (e) {
+          console.warn('Error destroying CodeMirror on close:', e);
+        }
+        messageEditor = null;
+      }
+      
       createModal.style.display = 'none';
       messageForm.reset();
     };

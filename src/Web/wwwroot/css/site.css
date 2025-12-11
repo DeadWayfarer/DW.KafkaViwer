@@ -833,6 +833,7 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 .CodeMirror-linenumber {
   color: var(--text-muted) !important;
   padding: 0 8px !important;
+  padding-left: 55px !important;
   min-width: 34px !important;
   text-align: right !important;
   display: inline-block !important;
@@ -840,7 +841,7 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 }
 
 .CodeMirror-lines {
-  padding-left: 50px !important;
+  padding-left: 0px !important;
 }
 
 .CodeMirror-scroll {
