@@ -282,6 +282,7 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 .topic-table {
   margin: 0;
   color: var(--text);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 .topic-table thead th {
@@ -556,6 +557,7 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
 #message-table thead th:nth-child(1),
