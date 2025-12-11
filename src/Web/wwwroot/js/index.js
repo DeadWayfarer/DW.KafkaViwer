@@ -316,14 +316,60 @@
         const utcTimeString = utcDate.toLocaleString('ru-RU', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         // Format local time (current region)
         const localTimeString = utcDate.toLocaleString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        tr.innerHTML = `
-          <td>${m.partition}</td>
-          <td>${m.offset}</td>
-          <td>${m.key}</td>
-          <td>${m.value}</td>
-          <td>${utcTimeString}</td>
-          <td>${localTimeString}</td>
-        `;
+        
+        // Create all cells
+        const partitionCell = document.createElement('td');
+        partitionCell.textContent = m.partition;
+        
+        const offsetCell = document.createElement('td');
+        offsetCell.textContent = m.offset;
+        
+        const keyCell = document.createElement('td');
+        keyCell.textContent = m.key;
+        
+        // Create value cell with expand/collapse functionality
+        const valueCell = document.createElement('td');
+        const valueText = String(m.value || '');
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'value-content';
+        valueSpan.textContent = valueText;
+        valueCell.appendChild(valueSpan);
+        
+        // Check if value needs truncation (rough estimate: more than ~80 chars or contains newlines)
+        const needsTruncation = valueText.length > 80 || valueText.includes('\n');
+        if (needsTruncation) {
+          const expandButton = document.createElement('button');
+          expandButton.className = 'expand-button';
+          expandButton.textContent = 'показать';
+          expandButton.type = 'button';
+          expandButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent row click
+            const isExpanded = valueCell.classList.contains('expanded');
+            if (isExpanded) {
+              valueCell.classList.remove('expanded');
+              expandButton.textContent = 'показать';
+            } else {
+              valueCell.classList.add('expanded');
+              expandButton.textContent = 'свернуть';
+            }
+          });
+          valueCell.appendChild(expandButton);
+        }
+        
+        const utcTimeCell = document.createElement('td');
+        utcTimeCell.textContent = utcTimeString;
+        
+        const localTimeCell = document.createElement('td');
+        localTimeCell.textContent = localTimeString;
+        
+        // Append all cells to row
+        tr.appendChild(partitionCell);
+        tr.appendChild(offsetCell);
+        tr.appendChild(keyCell);
+        tr.appendChild(valueCell);
+        tr.appendChild(utcTimeCell);
+        tr.appendChild(localTimeCell);
+        
         tr.addEventListener('click', () => {
           // Remove active class from all rows
           tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));

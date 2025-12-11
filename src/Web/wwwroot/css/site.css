@@ -270,10 +270,13 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 }
 
 .topic-table-wrapper {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .topic-table {
@@ -551,6 +554,8 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 #message-table {
   table-layout: fixed;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 #message-table thead th:nth-child(1),
@@ -584,9 +589,81 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 #message-table tbody td:nth-child(4) {
   /* Значение - занимает все оставшееся пространство */
   width: auto;
-  min-width: 200px;
   word-wrap: break-word;
   word-break: break-all;
+  position: relative;
+}
+
+#message-table tbody td:nth-child(4) {
+  max-height: 1.5em;
+  overflow: hidden;
+  line-height: 1.5em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  position: relative;
+}
+
+#message-table tbody td:nth-child(4) .value-content {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+  max-width: 100%;
+  padding-right: 65px; /* Space for expand button */
+  box-sizing: border-box;
+}
+
+#message-table tbody td:nth-child(4).expanded {
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+#message-table tbody td:nth-child(4).expanded .value-content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  padding-right: 0;
+}
+
+#message-table tbody td:nth-child(4) .expand-button {
+  position: absolute;
+  right: 2px;
+  top: 0;
+  background: var(--surface-alt);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 0.75em;
+  border-radius: 3px;
+  z-index: 10;
+  white-space: nowrap;
+  line-height: 1.5em;
+  height: 1.5em;
+  box-sizing: border-box;
+  width: 60px;
+  margin: 0;
+  pointer-events: auto;
+}
+
+#message-table tbody td:nth-child(4) .expand-button:hover {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+#message-table tbody td:nth-child(4).expanded .expand-button {
+  position: static;
+  display: inline-block;
+  margin-top: 4px;
+  margin-left: 8px;
 }
 
 #message-table thead th:nth-child(5),
