@@ -606,9 +606,9 @@
               <div class="form-group">
                 <label class="form-label" for="msg-key-type">Тип для Ключа</label>
                 <select class="form-select" id="msg-key-type" required>
-                  <option value="Null">Null</option>
+                  <option value="Null" selected>Null</option>
                   <option value="Number">Number</option>
-                  <option value="String" selected>String</option>
+                  <option value="String">String</option>
                 </select>
               </div>
               <div class="form-group">
@@ -618,6 +618,12 @@
               <div class="form-group">
                 <label class="form-label" for="msg-message-value">Сообщение (JSON)</label>
                 <textarea class="form-control" id="msg-message-value" rows="10" placeholder='{"key": "value"}'></textarea>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="msg-validate-json" checked />
+                  <label class="form-check-label" for="msg-validate-json">Проверять валидность JSON</label>
+                </div>
               </div>
             </form>
           </div>
@@ -639,6 +645,7 @@
      let keyTypeInput = createModal.querySelector('#msg-key-type');
      let keyValueInput = createModal.querySelector('#msg-key-value');
      let messageValueInput = createModal.querySelector('#msg-message-value');
+     let validateJsonCheckbox = createModal.querySelector('#msg-validate-json');
      
      // Store current topic name and tab ID in closure for this render
      const currentTopicName = topicName;
@@ -674,10 +681,11 @@
         existingCmWrapper.remove();
       }
       
-      // Reset form values
-      keyTypeInput.value = 'String';
-      keyValueInput.value = '';
-      messageValueInput.value = '{\n  \n}';
+       // Reset form values
+       keyTypeInput.value = 'Null';
+       keyValueInput.value = '';
+       messageValueInput.value = '{\n  \n}';
+       validateJsonCheckbox.checked = true;
       
       // Show modal first
       createModal.style.display = 'flex';
@@ -756,14 +764,16 @@
        
        let messageValue = messageEditor ? messageEditor.getValue() : messageValueInput.value;
        
-       // Validate JSON
-       try {
-         if (messageValue.trim()) {
-           JSON.parse(messageValue);
+       // Validate JSON only if checkbox is checked
+       if (validateJsonCheckbox && validateJsonCheckbox.checked) {
+         try {
+           if (messageValue.trim()) {
+             JSON.parse(messageValue);
+           }
+         } catch (e) {
+           showNotification('Ошибка: Сообщение должно быть валидным JSON', 'error');
+           return;
          }
-       } catch (e) {
-         showNotification('Ошибка: Сообщение должно быть валидным JSON', 'error');
-         return;
        }
 
        // Get key value based on type
