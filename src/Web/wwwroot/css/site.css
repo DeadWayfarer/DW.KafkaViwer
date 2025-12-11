@@ -493,6 +493,60 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   width: 100px;
 }
 
+/* Topic table column widths */
+#topic-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#topic-table thead th:nth-child(1),
+#topic-table tbody td:nth-child(1) {
+  /* Имя брокера */
+  width: 200px;
+  max-width: 200px;
+  min-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#topic-table thead th:nth-child(2),
+#topic-table tbody td:nth-child(2) {
+  /* Имя топика */
+  width: auto;
+  min-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#topic-table thead th:nth-child(3),
+#topic-table tbody td:nth-child(3) {
+  /* Партиций */
+  width: 100px;
+  max-width: 100px;
+  min-width: 100px;
+  text-align: right;
+}
+
+#topic-table thead th:nth-child(4),
+#topic-table tbody td:nth-child(4) {
+  /* Сообщений */
+  width: 140px;
+  max-width: 140px;
+  min-width: 140px;
+  text-align: right;
+}
+
+#topic-table thead th:nth-child(5),
+#topic-table tbody td:nth-child(5) {
+  /* Retention (дней) */
+  width: 150px;
+  max-width: 150px;
+  min-width: 150px;
+  text-align: right;
+}
+
 /* Message table column widths */
 #message-table {
   table-layout: fixed;

@@ -190,7 +190,9 @@
         .filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
         .forEach(t => {
           const tr = document.createElement('tr');
+          const brokerName = t.brokerName ?? t.BrokerName ?? t.brokername ?? 'Неизвестно';
           tr.innerHTML = `
+            <td>${brokerName}</td>
             <td>${t.name}</td>
             <td>${t.partitions}</td>
             <td>${t.messages.toLocaleString()}</td>
