@@ -493,6 +493,66 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   width: 100px;
 }
 
+/* Message table column widths */
+#message-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#message-table thead th:nth-child(1),
+#message-table tbody td:nth-child(1) {
+  /* Партиция */
+  width: 90px;
+  max-width: 90px;
+  min-width: 90px;
+}
+
+#message-table thead th:nth-child(2),
+#message-table tbody td:nth-child(2) {
+  /* Смещение */
+  width: 130px;
+  max-width: 130px;
+  min-width: 130px;
+}
+
+#message-table thead th:nth-child(3),
+#message-table tbody td:nth-child(3) {
+  /* Ключ */
+  width: 180px;
+  max-width: 180px;
+  min-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#message-table thead th:nth-child(4),
+#message-table tbody td:nth-child(4) {
+  /* Значение - занимает все оставшееся пространство */
+  width: auto;
+  min-width: 200px;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+#message-table thead th:nth-child(5),
+#message-table tbody td:nth-child(5) {
+  /* Временная метка (UTC) */
+  width: 190px;
+  max-width: 190px;
+  min-width: 190px;
+  white-space: nowrap;
+}
+
+#message-table thead th:nth-child(6),
+#message-table tbody td:nth-child(6) {
+  /* Временная метка (текущий регион) */
+  width: 190px;
+  max-width: 190px;
+  min-width: 190px;
+  white-space: nowrap;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;
