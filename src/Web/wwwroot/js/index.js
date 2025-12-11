@@ -302,14 +302,25 @@
 
     const renderRows = (rows) => {
       tbody.innerHTML = '';
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Нет сообщений</td></tr>';
+        return;
+      }
       rows.forEach(m => {
         const tr = document.createElement('tr');
+        // Parse UTC timestamp and convert to local time
+        const utcDate = new Date(m.timestampUtc);
+        // Format UTC time
+        const utcTimeString = utcDate.toLocaleString('ru-RU', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        // Format local time (current region)
+        const localTimeString = utcDate.toLocaleString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         tr.innerHTML = `
           <td>${m.partition}</td>
           <td>${m.offset}</td>
           <td>${m.key}</td>
           <td>${m.value}</td>
-          <td>${new Date(m.timestampUtc).toLocaleString()}</td>
+          <td>${utcTimeString}</td>
+          <td>${localTimeString}</td>
         `;
         tr.addEventListener('click', () => {
           // Remove active class from all rows
@@ -331,7 +342,7 @@
       console.log('Loading messages for topic:', topicName, 'brokerId:', brokerId);
       
       // Show loading state
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Загрузка...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Загрузка...</td></tr>';
       
       const params = new URLSearchParams();
       params.append('topic', topicName);
