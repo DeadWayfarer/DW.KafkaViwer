@@ -20,45 +20,11 @@ namespace DW.KafkaViwer.Web.Services.Kafka
             }
 
             var messages = new List<TopicMessageInfo>();
-            var bootstrapServers = $"{broker.Host}:{broker.Port}";
-
-            // ToDo: Сделать общее получение конфига
-            var consumerConfig = new ConsumerConfig
-            {
-                BootstrapServers = bootstrapServers,
-                GroupId = $"topic-viewer-{Guid.NewGuid()}",
-                EnableAutoCommit = false,
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                SessionTimeoutMs = 10000,
-                SocketTimeoutMs = 10000
-            };
-
-            // Configure authentication if provided
-            if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-            {
-                consumerConfig.SaslMechanism = SaslMechanism.Plain;
-                consumerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                consumerConfig.SaslUsername = broker.ClientId;
-                consumerConfig.SaslPassword = broker.ClientSecret;
-            }
 
             try
             {
                 // Get metadata using AdminClient
-                var adminConfig = new AdminClientConfig
-                {
-                    BootstrapServers = bootstrapServers,
-                    SocketTimeoutMs = 10000
-                };
-
-                if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-                {
-                    adminConfig.SaslMechanism = SaslMechanism.Plain;
-                    adminConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                    adminConfig.SaslUsername = broker.ClientId;
-                    adminConfig.SaslPassword = broker.ClientSecret;
-                }
-
+                var adminConfig = CreateAdminClientConfig(broker);
                 using var adminClient = new AdminClientBuilder(adminConfig).Build();
                 var metadata = adminClient.GetMetadata(filter.TopicName, TimeSpan.FromSeconds(10));
                 var topicMetadata = metadata.Topics.FirstOrDefault(t => t.Topic == filter.TopicName);
@@ -82,24 +48,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                 {
                     try
                     {
-                        var tempConfig = new ConsumerConfig
-                        {
-                            BootstrapServers = bootstrapServers,
-                            GroupId = $"watermark-{Guid.NewGuid()}",
-                            EnableAutoCommit = false,
-                            AutoOffsetReset = AutoOffsetReset.Earliest,
-                            SessionTimeoutMs = 10000,
-                            SocketTimeoutMs = 10000,
-                        };
-
-                        if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-                        {
-                            tempConfig.SaslMechanism = SaslMechanism.Plain;
-                            tempConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                            tempConfig.SaslUsername = broker.ClientId;
-                            tempConfig.SaslPassword = broker.ClientSecret;
-                        }
-
+                        var tempConfig = CreateConsumerConfig(broker, $"watermark-{Guid.NewGuid()}");
                         using var tempConsumer = new ConsumerBuilder<Ignore, Ignore>(tempConfig).Build();
                         tempConsumer.Assign(partition);
                         // Small delay to ensure assignment is complete
@@ -123,16 +72,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                     try
                     {
                         // Create unique consumer config for each partition
-                        var partitionConsumerConfig = new ConsumerConfig
-                        {
-                            BootstrapServers = bootstrapServers,
-                            GroupId = $"reader-{partition.Partition}-{Guid.NewGuid()}",
-                            EnableAutoCommit = false,
-                            AutoOffsetReset = AutoOffsetReset.Earliest,
-                            SessionTimeoutMs = 10000,
-                            SocketTimeoutMs = 10000
-                        };
-
+                        var partitionConsumerConfig = CreateConsumerConfig(broker, $"reader-{partition.Partition}-{Guid.NewGuid()}");
                         partitionConsumer = new ConsumerBuilder<Ignore, string>(partitionConsumerConfig)
                             .SetValueDeserializer(Deserializers.Utf8)
                             .Build();

@@ -13,6 +13,64 @@ public partial class KafkaService
         _brokers = brokers ?? new Dictionary<int, BrokerInfo>();
     }
 
+    /// <summary>
+    /// Creates a base AdminClientConfig for the specified broker with authentication configured.
+    /// </summary>
+    protected AdminClientConfig CreateAdminClientConfig(BrokerInfo broker)
+    {
+        var bootstrapServers = $"{broker.Host}:{broker.Port}";
+        
+        var config = new AdminClientConfig
+        {
+            BootstrapServers = bootstrapServers,
+            SocketTimeoutMs = 10000
+        };
+
+        // Use OAuthBearer if OIDCEndpoint is provided, otherwise use Plain
+        if (!string.IsNullOrWhiteSpace(broker.OIDCEndpoint))
+        {
+            config.SecurityProtocol = SecurityProtocol.SaslSsl;
+            config.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
+            config.SaslMechanism = SaslMechanism.OAuthBearer;
+            config.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
+            config.SaslOauthbearerClientId = broker.ClientId;
+            config.SaslOauthbearerClientSecret = broker.ClientSecret;
+        }
+
+        return config;
+    }
+
+    /// <summary>
+    /// Creates a base ConsumerConfig for the specified broker with authentication configured.
+    /// </summary>
+    protected ConsumerConfig CreateConsumerConfig(BrokerInfo broker, string? groupId = null)
+    {
+        var bootstrapServers = $"{broker.Host}:{broker.Port}";
+        
+        var config = new ConsumerConfig
+        {
+            BootstrapServers = bootstrapServers,
+            GroupId = groupId ?? $"consumer-{Guid.NewGuid()}",
+            EnableAutoCommit = false,
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            SessionTimeoutMs = 10000,
+            SocketTimeoutMs = 10000
+        };
+
+        // Use OAuthBearer if OIDCEndpoint is provided, otherwise use Plain
+        if (!string.IsNullOrWhiteSpace(broker.OIDCEndpoint))
+        {
+            config.SecurityProtocol = SecurityProtocol.SaslSsl;
+            config.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
+            config.SaslMechanism = SaslMechanism.OAuthBearer;
+            config.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
+            config.SaslOauthbearerClientId = broker.ClientId;
+            config.SaslOauthbearerClientSecret = broker.ClientSecret;
+        }
+
+        return config;
+    }
+
     public List<ConsumerInfo> GetConsumerInfo(ConsumerFilter filter)
     {
         var consumers = new List<ConsumerInfo>();
@@ -42,38 +100,10 @@ public partial class KafkaService
     private List<ConsumerInfo> LoadConsumersFromBroker(BrokerInfo broker, string topicName)
     {
         var consumers = new List<ConsumerInfo>();
-        var bootstrapServers = $"{broker.Host}:{broker.Port}";
-
-        var adminConfig = new AdminClientConfig
-        {
-            BootstrapServers = bootstrapServers,
-            SocketTimeoutMs = 10000
-        };
-
-        // Configure authentication if provided
-        if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-        {
-            adminConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-            
-            // Use OAuthBearer if OIDCEndpoint is provided, otherwise use Plain
-            if (!string.IsNullOrWhiteSpace(broker.OIDCEndpoint))
-            {
-                adminConfig.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
-                adminConfig.SaslMechanism = SaslMechanism.OAuthBearer;
-                adminConfig.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
-                adminConfig.SaslOauthbearerClientId = broker.ClientId;
-                adminConfig.SaslOauthbearerClientSecret = broker.ClientSecret;
-            }
-            else
-            {
-                adminConfig.SaslMechanism = SaslMechanism.Plain;
-                adminConfig.SaslUsername = broker.ClientId;
-                adminConfig.SaslPassword = broker.ClientSecret;
-            }
-        }
 
         try
         {
+            var adminConfig = CreateAdminClientConfig(broker);
             using var adminClient = new AdminClientBuilder(adminConfig).Build();
 
             // Try to list consumer groups
@@ -140,37 +170,7 @@ public partial class KafkaService
                                         if (topicPartitions.Count > 0)
                                         {
                                             // Get watermark offsets for lag calculation
-                                            var consumerConfig = new ConsumerConfig
-                                            {
-                                                BootstrapServers = bootstrapServers,
-                                                GroupId = $"lag-calculator-{Guid.NewGuid()}",
-                                                EnableAutoCommit = false,
-                                                AutoOffsetReset = AutoOffsetReset.Earliest,
-                                                SessionTimeoutMs = 10000,
-                                                SocketTimeoutMs = 10000
-                                            };
-
-                                            if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-                                            {
-                                                consumerConfig.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                                                
-                                                // Use OAuthBearer if OIDCEndpoint is provided, otherwise use Plain
-                                                if (!string.IsNullOrWhiteSpace(broker.OIDCEndpoint))
-                                                {
-                                                    consumerConfig.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
-                                                    consumerConfig.SaslMechanism = SaslMechanism.OAuthBearer;
-                                                    consumerConfig.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
-                                                    consumerConfig.SaslOauthbearerClientId = broker.ClientId;
-                                                    consumerConfig.SaslOauthbearerClientSecret = broker.ClientSecret;
-                                                }
-                                                else
-                                                {
-                                                    consumerConfig.SaslMechanism = SaslMechanism.Plain;
-                                                    consumerConfig.SaslUsername = broker.ClientId;
-                                                    consumerConfig.SaslPassword = broker.ClientSecret;
-                                                }
-                                            }
-
+                                            var consumerConfig = CreateConsumerConfig(broker, $"lag-calculator-{Guid.NewGuid()}");
                                             using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
 
                                             // Process each member of the consumer group
@@ -291,7 +291,7 @@ public partial class KafkaService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading consumers from broker {broker.ConnectionName} ({bootstrapServers}): {ex.Message}");
+            Console.WriteLine($"Error loading consumers from broker {broker.ConnectionName} ({broker.Host}:{broker.Port}): {ex.Message}");
             throw;
         }
 

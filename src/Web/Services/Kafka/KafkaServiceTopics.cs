@@ -56,25 +56,9 @@ namespace DW.KafkaViwer.Web.Services.Kafka
             var topics = new List<TopicInfo>();
             var bootstrapServers = $"{broker.Host}:{broker.Port}";
 
-            var config = new AdminClientConfig
-            {
-                BootstrapServers = bootstrapServers,
-                SocketTimeoutMs = 10000
-            };
-
-            // Configure authentication if provided
-            if (!string.IsNullOrWhiteSpace(broker.ClientId) && !string.IsNullOrWhiteSpace(broker.ClientSecret))
-            {
-                config.SecurityProtocol = SecurityProtocol.SaslPlaintext;
-                config.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
-                config.SaslMechanism = SaslMechanism.OAuthBearer;
-                config.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
-                config.SaslOauthbearerClientId = broker.ClientId;
-                config.SaslOauthbearerClientSecret = broker.ClientSecret;
-            }
-
             try
             {
+                var config = CreateAdminClientConfig(broker);
                 using var adminClient = new AdminClientBuilder(config).Build();
 
                 // Get metadata to retrieve topics
@@ -127,13 +111,8 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                         foreach (var partition in topicMetadata.Partitions)
                         {
                             // Get high watermark (last offset) for approximate message count
-                            using var consumer = new ConsumerBuilder<Ignore, Ignore>(new ConsumerConfig
-                            {
-                                BootstrapServers = bootstrapServers,
-                                GroupId = $"topic-viewer-{Guid.NewGuid()}",
-                                EnableAutoCommit = false,
-                                AutoOffsetReset = AutoOffsetReset.Earliest
-                            }).Build();
+                            var consumerConfig = CreateConsumerConfig(broker, $"topic-viewer-{Guid.NewGuid()}");
+                            using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
 
                             var topicPartition = new TopicPartition(topicMetadata.Topic, partition.PartitionId);
                             var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
