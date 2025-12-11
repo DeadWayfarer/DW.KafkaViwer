@@ -239,6 +239,82 @@
   renderTabs();
   loadTopics(currentFilter);
 
+  // --- Context menu for message table ---
+  let contextMenu = null;
+  
+  function showContextMenu(x, y, messageValue) {
+    // Remove existing context menu if any
+    if (contextMenu) {
+      contextMenu.remove();
+    }
+    
+    // Create context menu
+    contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.style.left = x + 'px';
+    contextMenu.style.top = y + 'px';
+    contextMenu.innerHTML = `
+      <div class="context-menu-item" data-action="copy-value">Копировать значение</div>
+    `;
+    
+    document.body.appendChild(contextMenu);
+    
+    // Handle menu item click
+    const copyItem = contextMenu.querySelector('[data-action="copy-value"]');
+    copyItem.addEventListener('click', () => {
+      copyToClipboard(messageValue);
+      contextMenu.remove();
+      contextMenu = null;
+    });
+    
+    // Close menu on click outside
+    const closeMenu = (e) => {
+      if (contextMenu && !contextMenu.contains(e.target)) {
+        contextMenu.remove();
+        contextMenu = null;
+        document.removeEventListener('click', closeMenu);
+      }
+    };
+    
+    setTimeout(() => {
+      document.addEventListener('click', closeMenu);
+    }, 0);
+  }
+  
+  function copyToClipboard(text) {
+    // Use modern Clipboard API if available
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        // Show feedback (optional)
+        console.log('Значение скопировано в буфер обмена');
+      }).catch(err => {
+        console.error('Ошибка при копировании:', err);
+        fallbackCopyToClipboard(text);
+      });
+    } else {
+      fallbackCopyToClipboard(text);
+    }
+  }
+  
+  function fallbackCopyToClipboard(text) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      console.log('Значение скопировано в буфер обмена');
+    } catch (err) {
+      console.error('Ошибка при копировании:', err);
+    }
+    document.body.removeChild(textArea);
+  }
+
   // --- Message view ---
   function renderMessageView(container, tab) {
     const topicName = tab.topic || tab.title.replace('Сообщения: ', '');
@@ -362,6 +438,9 @@
         const localTimeCell = document.createElement('td');
         localTimeCell.textContent = localTimeString;
         
+        // Store original message value in data attribute for context menu
+        tr.dataset.messageValue = valueText;
+        
         // Append all cells to row
         tr.appendChild(partitionCell);
         tr.appendChild(offsetCell);
@@ -376,6 +455,13 @@
           // Add active class to clicked row
           tr.classList.add('active');
         });
+        
+        // Context menu for copying value
+        tr.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          showContextMenu(e.pageX, e.pageY, valueText);
+        });
+        
         tbody.appendChild(tr);
       });
     };

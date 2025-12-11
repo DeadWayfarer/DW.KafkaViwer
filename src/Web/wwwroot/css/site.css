@@ -787,6 +787,32 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   user-select: none;
 }
 
+/* Context menu styles */
+.context-menu {
+  position: fixed;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.9em;
+}
+
+.context-menu-item:hover {
+  background: rgba(76, 194, 255, 0.15);
+  color: var(--accent);
+}
+
 /* CodeMirror styles */
 .CodeMirror {
   border: 1px solid var(--border);
