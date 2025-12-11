@@ -22,7 +22,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
             var messages = new List<TopicMessageInfo>();
             var bootstrapServers = $"{broker.Host}:{broker.Port}";
 
-            //Сделать общее получение конфига
+            // ToDo: Сделать общее получение конфига
             var consumerConfig = new ConsumerConfig
             {
                 BootstrapServers = bootstrapServers,
