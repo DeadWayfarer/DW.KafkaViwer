@@ -239,6 +239,40 @@
   renderTabs();
   loadTopics(currentFilter);
 
+  // --- Notification system ---
+  function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(n => n.remove());
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <span class="notification-icon">${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</span>
+        <span class="notification-message">${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Trigger animation by adding active class
+    requestAnimationFrame(() => {
+      notification.classList.add('notification-active');
+    });
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      notification.classList.remove('notification-active');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 300); // Wait for fade-out animation
+    }, 3000);
+  }
+
   // --- Context menu for message table ---
   let contextMenu = null;
   
@@ -596,16 +630,34 @@
       document.body.appendChild(createModal);
     }
 
-    const modalTitle = createModal.querySelector('h3');
-    const modalClose = createModal.querySelector('#create-message-close');
-    const modalCancel = createModal.querySelector('#create-message-cancel');
-    const modalApply = createModal.querySelector('#create-message-apply');
-    const messageForm = createModal.querySelector('#create-message-form');
-    const keyTypeInput = createModal.querySelector('#msg-key-type');
-    const keyValueInput = createModal.querySelector('#msg-key-value');
-    const messageValueInput = createModal.querySelector('#msg-message-value');
-    
-    const openCreateModal = () => {
+     // Get form elements - these need to be re-queried after cloning
+     let modalTitle = createModal.querySelector('h3');
+     let modalClose = createModal.querySelector('#create-message-close');
+     let modalCancel = createModal.querySelector('#create-message-cancel');
+     let modalApply = createModal.querySelector('#create-message-apply');
+     let messageForm = createModal.querySelector('#create-message-form');
+     let keyTypeInput = createModal.querySelector('#msg-key-type');
+     let keyValueInput = createModal.querySelector('#msg-key-value');
+     let messageValueInput = createModal.querySelector('#msg-message-value');
+     
+     // Store current topic name and tab ID in closure for this render
+     const currentTopicName = topicName;
+     const currentTabId = tab.id || `message-${topicName}`;
+     
+     // Remove existing event listeners by cloning nodes to remove all handlers
+     const newModalClose = modalClose.cloneNode(true);
+     const newModalCancel = modalCancel.cloneNode(true);
+     const newModalApply = modalApply.cloneNode(true);
+     modalClose.parentNode.replaceChild(newModalClose, modalClose);
+     modalCancel.parentNode.replaceChild(newModalCancel, modalCancel);
+     modalApply.parentNode.replaceChild(newModalApply, modalApply);
+     
+     // Update references to the new cloned elements
+     modalClose = newModalClose;
+     modalCancel = newModalCancel;
+     modalApply = newModalApply;
+     
+     const openCreateModal = () => {
       // Destroy existing CodeMirror instance if any
       if (messageEditor) {
         try {
@@ -675,71 +727,91 @@
       messageForm.reset();
     };
 
-    modalClose.addEventListener('click', closeCreateModal);
-    modalCancel.addEventListener('click', closeCreateModal);
-    createModal.addEventListener('click', (e) => {
-      if (e.target === createModal) {
-        closeCreateModal();
-      }
-    });
+     // Add event listeners to the cloned buttons (old handlers are removed by cloning)
+     modalClose.addEventListener('click', closeCreateModal);
+     modalCancel.addEventListener('click', closeCreateModal);
+     
+     // Remove existing click handler on modal overlay by using a flag
+     if (!createModal.dataset.clickHandlerAttached) {
+       createModal.addEventListener('click', (e) => {
+         if (e.target === createModal) {
+           closeCreateModal();
+         }
+       });
+       createModal.dataset.clickHandlerAttached = 'true';
+     }
 
-    modalApply.addEventListener('click', () => {
-      let messageValue = messageEditor ? messageEditor.getValue() : messageValueInput.value;
-      
-      // Validate JSON
-      try {
-        if (messageValue.trim()) {
-          JSON.parse(messageValue);
-        }
-      } catch (e) {
-        alert('Ошибка: Сообщение должно быть валидным JSON');
-        return;
-      }
+     modalApply.addEventListener('click', () => {
+       // Only process if modal is visible
+       if (createModal.style.display !== 'flex') {
+         return;
+       }
+       
+       // Check if this is the active tab
+       const activeTab = tabState.tabs.find(t => t.id === tabState.activeId);
+       if (!activeTab || activeTab.id !== currentTabId) {
+         console.log('Ignoring send from inactive tab:', currentTabId, 'Active:', activeTab?.id);
+         return; // Don't send if this is not the active tab
+       }
+       
+       let messageValue = messageEditor ? messageEditor.getValue() : messageValueInput.value;
+       
+       // Validate JSON
+       try {
+         if (messageValue.trim()) {
+           JSON.parse(messageValue);
+         }
+       } catch (e) {
+         showNotification('Ошибка: Сообщение должно быть валидным JSON', 'error');
+         return;
+       }
 
-      // Get key value based on type
-      let keyValue = null;
-      if (keyTypeInput.value === 'Null') {
-        keyValue = null;
-      } else if (keyTypeInput.value === 'Number') {
-        const num = parseFloat(keyValueInput.value);
-        if (isNaN(num)) {
-          alert('Ошибка: Ключ должен быть числом');
-          return;
-        }
-        keyValue = num;
-      } else {
-        keyValue = keyValueInput.value.trim() || null;
-      }
+       // Get key value based on type
+       let keyValue = null;
+       if (keyTypeInput.value === 'Null') {
+         keyValue = null;
+       } else if (keyTypeInput.value === 'Number') {
+         const num = parseFloat(keyValueInput.value);
+         if (isNaN(num)) {
+           showNotification('Ошибка: Ключ должен быть числом', 'error');
+           return;
+         }
+         keyValue = num;
+       } else {
+         keyValue = keyValueInput.value.trim() || null;
+       }
 
-      const messageData = {
-        topic: topicName,
-        key: keyValue,
-        value: messageValue.trim() || '{}'
-      };
+       const messageData = {
+         topic: currentTopicName,
+         key: keyValue,
+         value: messageValue.trim() || '{}'
+       };
 
-      // Send to API
-      fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(messageData)
-      })
-        .then(r => {
-          if (r.ok) {
-            alert('Сообщение успешно отправлено');
-            closeCreateModal();
-            loadMessages(); // Reload messages
-          } else {
-            return r.text().then(text => {
-              throw new Error(text || 'Ошибка при отправке сообщения');
-            });
-          }
-        })
-        .catch(error => {
-          alert('Ошибка при отправке сообщения: ' + error.message);
-        });
-    });
+       // Send to API
+       fetch('/api/messages', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify(messageData)
+       })
+         .then(r => {
+           if (r.ok) {
+             showNotification('Сообщение успешно отправлено', 'success');
+             // Only reload messages if this is still the active tab
+             if (tabState.activeId === currentTabId) {
+               loadMessages(); // Reload messages
+             }
+           } else {
+             return r.text().then(text => {
+               throw new Error(text || 'Ошибка при отправке сообщения');
+             });
+           }
+         })
+         .catch(error => {
+           showNotification('Ошибка при отправке сообщения: ' + error.message, 'error');
+         });
+     });
 
     createBtn.addEventListener('click', openCreateModal);
 

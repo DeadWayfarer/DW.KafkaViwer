@@ -813,6 +813,115 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   color: var(--accent);
 }
 
+/* Notification styles (Flutter Design inspired) */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 300px;
+  max-width: 500px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+              0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  opacity: 0;
+  transform: translateX(400px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.notification-active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.notification-message {
+  flex: 1;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.notification-success {
+  border-left: 4px solid #4caf50;
+}
+
+.notification-success .notification-icon {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.notification-error {
+  border-left: 4px solid #f44336;
+}
+
+.notification-error .notification-icon {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.notification-info {
+  border-left: 4px solid var(--accent);
+}
+
+.notification-info .notification-icon {
+  background: rgba(76, 194, 255, 0.2);
+  color: var(--accent);
+}
+
+.notification:hover .notification-icon {
+  transform: scale(1.1);
+}
+
+/* Animation for notification appearance */
+@keyframes notificationSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(400px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes notificationSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(400px) scale(0.9);
+  }
+}
+
 /* CodeMirror styles */
 .CodeMirror {
   border: 1px solid var(--border);
