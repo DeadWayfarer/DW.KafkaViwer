@@ -68,12 +68,13 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                 // Create a separate consumer for each partition to avoid state issues
                 foreach (var partition in partitions)
                 {
-                    IConsumer<Ignore, string>? partitionConsumer = null;
+                    IConsumer<string, string>? partitionConsumer = null;
                     try
                     {
                         // Create unique consumer config for each partition
                         var partitionConsumerConfig = CreateConsumerConfig(broker, $"reader-{partition.Partition}-{Guid.NewGuid()}");
-                        partitionConsumer = new ConsumerBuilder<Ignore, string>(partitionConsumerConfig)
+                        partitionConsumer = new ConsumerBuilder<string, string>(partitionConsumerConfig)
+                            .SetKeyDeserializer(Deserializers.Utf8)
                             .SetValueDeserializer(Deserializers.Utf8)
                             .Build();
 
@@ -131,14 +132,28 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                                     }
                                 }
 
-                                var key = result.Message.Key?.ToString() ?? string.Empty;
+                                // Process key: null -> "<Null>", empty string -> "<Empty>"
+                                string key;
+                                if (result.Message.Key == null)
+                                {
+                                    key = "{Null}";
+                                }
+                                else if (string.IsNullOrEmpty(result.Message.Key))
+                                {
+                                    key = "{Empty}";
+                                }
+                                else
+                                {
+                                    key = result.Message.Key;
+                                }
                                 var value = result.Message.Value ?? string.Empty;
 
                                 // Apply text query filter
                                 if (!string.IsNullOrWhiteSpace(filter.Query))
                                 {
                                     var term = filter.Query.Trim().ToLowerInvariant();
-                                    if (!key.ToLowerInvariant().Contains(term) && !value.ToLowerInvariant().Contains(term))
+                                    var keyLower = key.ToLowerInvariant();
+                                    if (!keyLower.Contains(term) && !value.ToLowerInvariant().Contains(term))
                                     {
                                         continue; // Doesn't match query
                                     }
