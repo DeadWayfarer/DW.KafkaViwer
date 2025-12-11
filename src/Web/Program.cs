@@ -1,3 +1,5 @@
+using DW.KafkaViwer.Web.Services.Kafka;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -12,10 +14,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Configure brokers from appsettings
 var brokersSection = builder.Configuration.GetSection("Brokers");
 var brokers = brokersSection.Get<List<DW.KafkaViwer.Web.Models.BrokerInfo>>() ?? new List<DW.KafkaViwer.Web.Models.BrokerInfo>();
+var brokersDict = brokers.ToDictionary(x => x.Id);
 
 // Register KafkaService with brokers from configuration
-builder.Services.AddSingleton<DW.KafkaViwer.Web.Services.KafkaService>(sp => 
-    new DW.KafkaViwer.Web.Services.KafkaService(brokers));
+builder.Services.AddSingleton<KafkaService>(sp => new KafkaService(brokersDict));
 
 var app = builder.Build();
 
@@ -50,7 +52,7 @@ app.MapGet("/api/nav", () =>
 });
 
 // Topics API backed by KafkaService with filtering
-app.MapGet("/api/topics", (string? name, DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+app.MapGet("/api/topics", (string? name, KafkaService kafkaService) =>
 {
     var topics = kafkaService.GetTopics(new DW.KafkaViwer.Web.Models.TopicFilter(name));
     return Results.Json(topics, new System.Text.Json.JsonSerializerOptions 
@@ -68,7 +70,7 @@ app.MapGet("/api/messages", (
     DateTime? from,
     DateTime? to,
     string? query,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     if (string.IsNullOrWhiteSpace(topic))
     {
@@ -94,7 +96,7 @@ app.MapGet("/api/messages", (
 // Consumers API
 app.MapGet("/api/consumers", (
     string topic,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     if (string.IsNullOrWhiteSpace(topic))
     {
@@ -106,7 +108,7 @@ app.MapGet("/api/consumers", (
 });
 
 // Brokers API
-app.MapGet("/api/brokers", (DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+app.MapGet("/api/brokers", (KafkaService kafkaService) =>
 {
     var brokers = kafkaService.GetBrokers();
     return Results.Json(brokers);
@@ -114,7 +116,7 @@ app.MapGet("/api/brokers", (DW.KafkaViwer.Web.Services.KafkaService kafkaService
 
 app.MapPost("/api/brokers", (
     DW.KafkaViwer.Web.Models.BrokerInfo brokerInfo,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     kafkaService.AddBroker(brokerInfo);
     return Results.Ok();
@@ -122,7 +124,7 @@ app.MapPost("/api/brokers", (
 
 app.MapPut("/api/brokers", (
     DW.KafkaViwer.Web.Models.BrokerInfo brokerInfo,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     kafkaService.UpdateBroker(brokerInfo);
     return Results.Ok();
@@ -130,7 +132,7 @@ app.MapPut("/api/brokers", (
 
 app.MapDelete("/api/brokers/{id:int}", (
     int id,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     var brokers = kafkaService.GetBrokers();
     var broker = brokers.FirstOrDefault(b => b.Id == id);
@@ -145,7 +147,7 @@ app.MapDelete("/api/brokers/{id:int}", (
 // Send message API
 app.MapPost("/api/messages", async (
     HttpRequest request,
-    DW.KafkaViwer.Web.Services.KafkaService kafkaService) =>
+    KafkaService kafkaService) =>
 {
     try
     {
