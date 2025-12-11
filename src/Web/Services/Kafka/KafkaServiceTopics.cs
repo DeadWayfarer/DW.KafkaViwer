@@ -132,7 +132,8 @@ namespace DW.KafkaViwer.Web.Services.Kafka
                         partitionCount,
                         messageCount,
                         retentionDays,
-                        broker.Id));
+                        broker.Id,
+                        broker.ConnectionName));
                 }
             }
             catch (Exception ex)

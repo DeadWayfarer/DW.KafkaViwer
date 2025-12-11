@@ -203,15 +203,16 @@
             tr.classList.add('active');
             
             const tabId = `message-${t.name}`;
-            // Try different property names for brokerId
+            // Try different property names for brokerId and brokerName
             const brokerId = t.brokerId ?? t.BrokerId ?? t.brokerid;
-            console.log('Topic data:', t, 'BrokerId:', brokerId);
+            const brokerName = t.brokerName ?? t.BrokerName ?? t.brokername ?? '';
+            console.log('Topic data:', t, 'BrokerId:', brokerId, 'BrokerName:', brokerName);
             if (!brokerId && brokerId !== 0) {
               console.error('BrokerId not found for topic:', t);
               alert('Ошибка: Не удалось определить ID брокера для топика. Проверьте консоль для деталей.');
               return;
             }
-            openTab(tabId, `Сообщения: ${t.name}`, { render: renderMessageView, topic: t.name, brokerId: brokerId });
+            openTab(tabId, `Сообщения: ${t.name}`, { render: renderMessageView, topic: t.name, brokerId: brokerId, brokerName: brokerName });
           });
           tbody.appendChild(tr);
         });
@@ -240,8 +241,7 @@
   function renderMessageView(container, tab) {
     const topicName = tab.topic || tab.title.replace('Сообщения: ', '');
     const brokerId = tab.brokerId;
-    
-    console.log('renderMessageView called with:', { topicName, brokerId, tab });
+    let brokerName = tab.brokerName || '';
     
     if (!brokerId && brokerId !== 0) {
       console.error('BrokerId is required for loading messages. Tab data:', tab);
@@ -263,7 +263,27 @@
     const createBtn = container.querySelector('#msg-create-btn');
     const consumersBtn = container.querySelector('#msg-consumers-btn');
 
-    meta.textContent = `Топик: ${topicName}`;
+    // Set initial broker name or fetch it if not provided
+    if (brokerName) {
+      meta.textContent = `Брокер: ${brokerName}`;
+    } else {
+      meta.textContent = 'Брокер: загрузка...';
+      // Try to get broker name from API
+      fetch('/api/brokers')
+        .then(r => r.json())
+        .then(brokers => {
+          const broker = brokers.find(b => (b.id === brokerId) || (b.Id === brokerId));
+          if (broker) {
+            const name = broker.connectionName || broker.ConnectionName || '';
+            meta.textContent = `Брокер: ${name || 'неизвестно'}`;
+          } else {
+            meta.textContent = 'Брокер: неизвестно';
+          }
+        })
+        .catch(() => {
+          meta.textContent = 'Брокер: неизвестно';
+        });
+    }
 
     tab.messageFilter = tab.messageFilter || {
       searchType: 'newest',
