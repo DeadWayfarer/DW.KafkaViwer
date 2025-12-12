@@ -80,6 +80,8 @@
           openTab('broker-view', 'Брокеры', { render: renderBrokerView, closable: true });
         } else if (item.id === 'topic-list-view') {
           openTab('topic-list-view', 'Топики', { render: renderTopicView, closable: false });
+        } else if (item.id === 'consumers') {
+          openTab('consumers-all', 'Консьюмеры', { render: renderConsumerView, closable: true });
         } else {
           openTab(item.id, item.title);
         }
@@ -931,9 +933,14 @@
 
   // --- Consumer view ---
   function renderConsumerView(container, tab) {
-    const topicName = tab.topic || '';
+    const topicName = tab.topic || null; // Use null instead of empty string for "all consumers"
     container.innerHTML = '';
-    container.appendChild(document.querySelector('[data-tab-content="consumer-view"]').cloneNode(true));
+    const template = document.querySelector('[data-tab-content="consumer-view"]');
+    if (!template) {
+      container.innerHTML = '<div class="alert alert-danger">Ошибка: шаблон ConsumerView не найден</div>';
+      return;
+    }
+    container.appendChild(template.cloneNode(true));
 
     const tbody = container.querySelector('#consumer-table tbody');
     const refreshBtn = container.querySelector('#consumer-refresh-btn');
@@ -1079,15 +1086,25 @@
         ? `/api/consumers?topic=${encodeURIComponent(topicName)}`
         : '/api/consumers';
       
+      console.log('Loading consumers from:', url, 'topicName:', topicName);
+      
       fetch(url)
-        .then(r => r.json())
+        .then(r => {
+          if (!r.ok) {
+            return r.text().then(text => {
+              throw new Error(`HTTP ${r.status}: ${text}`);
+            });
+          }
+          return r.json();
+        })
         .then(data => {
+          console.log('Received consumers data:', data);
           renderRows(data ?? []);
           if (statusEl) statusEl.textContent = '';
         })
         .catch(error => {
           console.error('Error loading consumers:', error);
-          if (statusEl) statusEl.textContent = 'Ошибка загрузки';
+          if (statusEl) statusEl.textContent = `Ошибка загрузки: ${error.message}`;
         });
     };
 

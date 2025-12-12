@@ -38,13 +38,6 @@ public partial class KafkaService
 
                 if (describeResult == null) return consumers;
 
-                // Get offsets for all groups
-                var offsetsRequests = groupIds.Select(g => new ConsumerGroupTopicPartitions(g, null)).ToList();
-                var offsetsResult = adminClient.ListConsumerGroupOffsetsAsync(
-                    offsetsRequests,
-                    new ListConsumerGroupOffsetsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
-                ).Result;
-
                 var consumerConfig = CreateConsumerConfig(broker, $"lag-calculator-{Guid.NewGuid()}");
                 using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
 
@@ -55,8 +48,16 @@ public partial class KafkaService
                         if (!describeResult.TryGetValue(groupId, out var groupDescription) || groupDescription == null)
                             continue;
 
-                        // Find offsets for this group
-                        var groupOffsets = offsetsResult.FirstOrDefault(o => o.Group == groupId);
+                        // Get offsets for this group only (Kafka API allows only one group at a time)
+                        var offsetsRequest = new ConsumerGroupTopicPartitions(groupId, null);
+                        var offsetsResult = adminClient.ListConsumerGroupOffsetsAsync(
+                            new[] { offsetsRequest },
+                            new ListConsumerGroupOffsetsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
+                        ).Result;
+
+                        if (offsetsResult == null || offsetsResult.Count == 0) continue;
+
+                        var groupOffsets = offsetsResult[0];
                         if (groupOffsets?.Partitions == null) continue;
 
                         // Filter by topic if specified
