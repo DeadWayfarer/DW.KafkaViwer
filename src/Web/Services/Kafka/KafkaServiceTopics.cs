@@ -46,6 +46,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
             allTopics = allTopics
                 .GroupBy(t => t.Name)
                 .Select(g => g.First())
+                .OrderBy(t => t.Name)
                 .ToList();
 
             return allTopics;
