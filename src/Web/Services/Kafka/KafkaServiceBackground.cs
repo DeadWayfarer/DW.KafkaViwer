@@ -112,6 +112,15 @@ public partial class KafkaService
         _topicCache.AddTopics(updatedTopics);
     }
 
+    public void LoadTopicMessageCount(string topicName)
+    {
+        var topic = _topicCache.GetTopics().FirstOrDefault(t => t.Name == topicName);
+        if (topic == null)
+            return;
+
+        LoadTopicMessageCount(topic);
+    }
+
     public void LoadTopicMessageCount(TopicInfo topic)
     {
         try

@@ -218,9 +218,25 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   border-radius: 12px;
 }
 
+.message-filter-card {
+  padding: 10px 12px;
+  gap: 8px;
+}
+
 .topic-card-title {
   font-weight: 600;
   color: var(--text);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.message-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
 }
 
 .topic-filter-grid {
@@ -250,8 +266,15 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 .filter-btn {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
+  padding-inline: 10px;
+  padding-block: 4px;
+  font-size: 0.85rem;
+}
+
+.message-filter-grid .btn-group {
+  margin-top: 6px;
   gap: 6px;
-  padding-inline: 14px;
 }
 
 .align-end {
@@ -277,6 +300,13 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   background: var(--surface);
   max-width: 100%;
   box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+}
+
+.message-view .topic-card:last-child .topic-table-wrapper {
+  height: 100%;
+  max-height: calc(100vh - 280px);
 }
 
 .topic-table {
@@ -312,19 +342,27 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   box-shadow: 0 2px 12px rgba(76, 194, 255, 0.3);
 }
 
+.message-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .message-meta {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+  margin: 0;
+  padding: 0;
+  border: none;
+  flex-shrink: 0;
 }
 
 .message-meta-content {
   display: flex;
   flex-direction: row;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.75rem;
+  flex-wrap: nowrap;
+  gap: 6px;
+  font-size: 0.7rem;
 }
 
 .message-meta-item {
@@ -354,11 +392,13 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   vertical-align: middle;
   overflow-x: auto;
   max-width: fit-content;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
 .partitions-table {
   width: auto;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   margin: 0;
   border-collapse: collapse;
@@ -366,22 +406,25 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 
 .partitions-table th,
 .partitions-table td {
-  padding: 2px 6px;
+  padding: 1px 4px;
   text-align: left;
   border: 1px solid var(--border);
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .partitions-table th {
   background-color: var(--surface-alt);
   font-weight: 600;
   color: var(--text);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
+  position: sticky;
+  top: 0;
 }
 
 .partitions-table td {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
 }
 
 .partitions-table tbody tr:hover {
@@ -392,14 +435,10 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   color: var(--text-muted);
 }
 
-.message-filter-card {
-  gap: 16px;
-}
-
 .message-filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
   align-items: end;
 }
 
@@ -422,7 +461,21 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 .message-view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.message-view > .topic-card:first-child {
+  flex-shrink: 0;
+}
+
+.message-view > .topic-card:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 12px;
 }
 
 .fluent-nav {
@@ -519,6 +572,15 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   background: var(--surface-alt);
   border: 1px solid var(--border);
   color: var(--text);
+  font-size: 0.875rem;
+  padding: 4px 8px;
+  height: auto;
+}
+
+.message-filter-grid .form-label {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  color: var(--text-muted);
 }
 
 .form-control:focus,
@@ -837,7 +899,11 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.message-filter-grid .form-group {
+  margin-bottom: 0;
 }
 
 .form-group:last-child {

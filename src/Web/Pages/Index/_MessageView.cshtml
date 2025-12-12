@@ -1,6 +1,9 @@
 <div class="message-view" data-tab-content="message-view">
     <div class="topic-card glass-panel message-filter-card">
-        <div class="topic-card-title">Фильтр сообщений</div>
+        <div class="message-filter-header">
+            <div class="topic-card-title">Фильтр сообщений</div>
+            <div class="message-meta" id="message-meta"></div>
+        </div>
         <div class="message-filter-grid">
             <div class="form-group">
                 <label class="form-label" for="msg-search-type">Тип поиска</label>
@@ -35,13 +38,12 @@
                     <input class="form-control" id="msg-filter" type="text" placeholder="Введите текст..." />
                     <button id="msg-search-btn" type="button" class="btn btn-primary filter-btn">🔍 Найти</button>
                 </div>
-                <div class="btn-group gap-2" style="margin-top: 12px;">
+                <div class="btn-group gap-2">
                     <button id="msg-create-btn" type="button" class="btn btn-outline-primary filter-btn">＋ Отправить сообщение</button>
                     <button id="msg-consumers-btn" type="button" class="btn btn-outline-secondary filter-btn">👥 Посмотреть консьюмеры топика</button>
                 </div>
             </div>
         </div>
-        <div class="message-meta" id="message-meta"></div>
     </div>
     <div class="topic-card glass-panel">
         <div class="topic-card-title">Список сообщений</div>

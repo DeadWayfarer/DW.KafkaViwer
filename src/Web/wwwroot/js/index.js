@@ -369,6 +369,7 @@
     container.appendChild(document.querySelector('[data-tab-content="message-view"]').cloneNode(true));
 
     const meta = container.querySelector('#message-meta');
+    const filterGrid = container.querySelector('.message-filter-grid');
     const tbody = container.querySelector('#message-table tbody');
     const searchTypeEl = container.querySelector('#msg-search-type');
     const limitEl = container.querySelector('#msg-limit');
@@ -379,42 +380,46 @@
     const createBtn = container.querySelector('#msg-create-btn');
     const consumersBtn = container.querySelector('#msg-consumers-btn');
 
-    // Load and display broker info and partition info
-    const loadBrokerAndPartitionInfo = async () => {
-      let brokerNameToDisplay = brokerName;
+    // Store broker name and partitions info for reuse - scoped to this tab
+    let cachedBrokerName = brokerName;
+    let cachedPartitionsInfo = null;
+    
+    // Function to update meta info display - ensure we're updating the correct tab's meta
+    const updateMetaInfo = (showLoading = false, partitionsInfoToUse = null) => {
+      // Verify we're still on the correct tab and topic
+      const currentMeta = container.querySelector('#message-meta');
+      if (!currentMeta) return; // Tab might have been closed
       
-      // Fetch broker name if not provided
-      if (!brokerNameToDisplay) {
-        try {
-          const brokersResponse = await fetch('/api/brokers');
-          const brokers = await brokersResponse.json();
-          const broker = brokers.find(b => (b.id === brokerId) || (b.Id === brokerId));
-          if (broker) {
-            brokerNameToDisplay = broker.connectionName || broker.ConnectionName || '';
-          }
-        } catch (e) {
-          console.error('Error loading broker info:', e);
-        }
-      }
+      // Use provided partitions info or cached one
+      const partitionsInfo = partitionsInfoToUse || cachedPartitionsInfo;
       
-      // Fetch partition info
-      let partitionsInfo = null;
-      try {
-        const partitionsResponse = await fetch(`/api/topics/${encodeURIComponent(topicName)}/partitions?brokerId=${brokerId}`);
-        if (partitionsResponse.ok) {
-          partitionsInfo = await partitionsResponse.json();
-        }
-      } catch (e) {
-        console.error('Error loading partition info:', e);
-      }
-      
-      // Build HTML for meta section - all in one line
       let metaHtml = `<div class="message-meta-content">`;
-      metaHtml += `<span class="message-meta-item"><strong>Брокер:</strong> ${brokerNameToDisplay || 'неизвестно'}</span>`;
+      metaHtml += `<span class="message-meta-item"><strong>Брокер:</strong> ${cachedBrokerName || 'неизвестно'}</span>`;
       
-      if (partitionsInfo) {
+      if (showLoading || !partitionsInfo) {
         metaHtml += `<span class="message-meta-separator">|</span>`;
-        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> ${partitionsInfo.totalMessages.toLocaleString()}</span>`;
+        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> <span class="loading-spinner">⏳</span></span>`;
+        
+        if (partitionsInfo && partitionsInfo.partitions && partitionsInfo.partitions.length > 0) {
+          metaHtml += `<span class="message-meta-separator">|</span>`;
+          metaHtml += `<span class="message-meta-item"><strong>Партиции:</strong></span>`;
+          metaHtml += `<div class="partitions-table-wrapper">`;
+          metaHtml += `<table class="table table-dark table-sm partitions-table">`;
+          metaHtml += `<thead><tr><th>П</th><th>Мин</th><th>Макс</th></tr></thead>`;
+          metaHtml += `<tbody>`;
+          partitionsInfo.partitions.forEach(p => {
+            metaHtml += `<tr><td>${p.partitionId}</td><td>${p.minOffset.toLocaleString()}</td><td>${p.maxOffset.toLocaleString()}</td></tr>`;
+          });
+          metaHtml += `</tbody></table>`;
+          metaHtml += `</div>`;
+        } else {
+          metaHtml += `<span class="message-meta-separator">|</span>`;
+          metaHtml += `<span class="message-meta-item"><strong>Партиции:</strong> <span class="loading-spinner">⏳</span></span>`;
+        }
+      } else {
+        const displayCount = partitionsInfo.totalMessages || 0;
+        metaHtml += `<span class="message-meta-separator">|</span>`;
+        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> ${displayCount.toLocaleString()}</span>`;
         
         if (partitionsInfo.partitions && partitionsInfo.partitions.length > 0) {
           metaHtml += `<span class="message-meta-separator">|</span>`;
@@ -429,15 +434,53 @@
           metaHtml += `</tbody></table>`;
           metaHtml += `</div>`;
         }
-      } else {
-        metaHtml += `<span class="message-meta-separator">|</span>`;
-        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> <span class="loading-spinner">⏳</span></span>`;
-        metaHtml += `<span class="message-meta-separator">|</span>`;
-        metaHtml += `<span class="message-meta-item"><strong>Партиции:</strong> <span class="loading-spinner">⏳</span></span>`;
       }
       
       metaHtml += `</div>`;
-      meta.innerHTML = metaHtml;
+      currentMeta.innerHTML = metaHtml;
+    };
+    
+    // Load and display broker info and partition info - ensure we use correct topic and broker
+    const loadBrokerAndPartitionInfo = async (currentTopicName = topicName, currentBrokerId = brokerId) => {
+      // Verify we're still on the correct tab
+      const currentMeta = container.querySelector('#message-meta');
+      if (!currentMeta) return; // Tab might have been closed
+      
+      let brokerNameToDisplay = brokerName;
+      
+      // Fetch broker name if not provided
+      if (!brokerNameToDisplay) {
+        try {
+          const brokersResponse = await fetch('/api/brokers');
+          const brokers = await brokersResponse.json();
+          const broker = brokers.find(b => (b.id === currentBrokerId) || (b.Id === currentBrokerId));
+          if (broker) {
+            brokerNameToDisplay = broker.connectionName || broker.ConnectionName || '';
+          }
+        } catch (e) {
+          console.error('Error loading broker info:', e);
+        }
+      }
+      
+      cachedBrokerName = brokerNameToDisplay;
+      
+      // Fetch partition info for the specific topic
+      let partitionsInfo = null;
+      try {
+        const partitionsResponse = await fetch(`/api/topics/${encodeURIComponent(currentTopicName)}/partitions?brokerId=${currentBrokerId}`);
+        if (partitionsResponse.ok) {
+          partitionsInfo = await partitionsResponse.json();
+          // Verify this is still the correct topic before caching
+          if (partitionsInfo.topicName === currentTopicName && partitionsInfo.brokerId === currentBrokerId) {
+            cachedPartitionsInfo = partitionsInfo;
+          }
+        }
+      } catch (e) {
+        console.error('Error loading partition info:', e);
+      }
+      
+      // Update meta info with the loaded partitions info
+      updateMetaInfo(false, partitionsInfo || cachedPartitionsInfo);
     };
     
     // Load broker and partition info
@@ -555,8 +598,9 @@
       
       console.log('Loading messages for topic:', topicName, 'brokerId:', brokerId);
       
-      // Show loading state
+      // Show loading state in table and meta info
       tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Загрузка...</td></tr>';
+      updateMetaInfo(true); // Show loading spinner in meta info
       
       const params = new URLSearchParams();
       params.append('topic', topicName);
@@ -590,7 +634,12 @@
         })
         .then(data => {
           console.log('Received messages:', data);
-          renderRows(data ?? []);
+          const messages = data ?? [];
+          renderRows(messages);
+          
+          // Reload partition info for THIS specific topic to get updated counts
+          // Pass current topicName and brokerId explicitly to ensure correct topic
+          loadBrokerAndPartitionInfo(topicName, brokerId);
         })
         .catch(error => {
           console.error('Error loading messages:', error);
@@ -602,6 +651,7 @@
             timestampUtc: new Date().toISOString()
           }];
           renderRows(fallback);
+          updateMetaInfo(false); // Remove loading spinner on error
         });
     };
 
