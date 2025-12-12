@@ -78,55 +78,55 @@ namespace DW.KafkaViwer.Web.Services.Kafka
 
                     // Try to get topic configuration for retention days
                     int retentionDays = 7; // Default value
-                    try
-                    {
-                        var topicConfigResource = new ConfigResource
-                        {
-                            Type = ResourceType.Topic,
-                            Name = topicMetadata.Topic
-                        };
-
-                        var describeResult = adminClient.DescribeConfigsAsync(
-                            new[] { topicConfigResource },
-                            new DescribeConfigsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
-                        ).Result;
-
-                        if (describeResult.Count > 0 && describeResult[0].Entries.TryGetValue("retention.ms", out var retentionMsConfig))
-                        {
-                            if (long.TryParse(retentionMsConfig.Value, out var retentionMs))
-                            {
-                                retentionDays = (int)(retentionMs / (1000L * 60 * 60 * 24));
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // If we can't get retention config, use default
-                    }
+//                    try
+//                    {
+//                        var topicConfigResource = new ConfigResource
+//                        {
+//                            Type = ResourceType.Topic,
+//                            Name = topicMetadata.Topic
+//                        };
+//
+//                        var describeResult = adminClient.DescribeConfigsAsync(
+//                            new[] { topicConfigResource },
+//                            new DescribeConfigsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
+//                        ).Result;
+//
+//                        if (describeResult.Count > 0 && describeResult[0].Entries.TryGetValue("retention.ms", out var retentionMsConfig))
+//                        {
+//                            if (long.TryParse(retentionMsConfig.Value, out var retentionMs))
+//                            {
+//                                retentionDays = (int)(retentionMs / (1000L * 60 * 60 * 24));
+//                            }
+//                        }
+//                    }
+//                    catch
+//                    {
+//                        // If we can't get retention config, use default
+//                    }
 
                     // Get message count (approximate) - this is a simplified approach
                     // In production, you might want to use a consumer to get exact counts
                     long messageCount = 0;
-                    try
-                    {
-                        foreach (var partition in topicMetadata.Partitions)
-                        {
-                            // Get high watermark (last offset) for approximate message count
-                            var consumerConfig = CreateConsumerConfig(broker, $"topic-viewer-{Guid.NewGuid()}");
-                            using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
-
-                            var topicPartition = new TopicPartition(topicMetadata.Topic, partition.PartitionId);
-                            var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
-                            messageCount += watermarkOffsets.High - watermarkOffsets.Low;
-
-                            consumer.Close();
-                        }
-                    }
-                    catch
-                    {
-                        // If we can't get message count, use 0
-                        messageCount = 0;
-                    }
+//                    try
+//                    {
+//                        foreach (var partition in topicMetadata.Partitions)
+//                        {
+//                            // Get high watermark (last offset) for approximate message count
+//                            var consumerConfig = CreateConsumerConfig(broker, $"topic-viewer-{Guid.NewGuid()}");
+//                            using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
+//
+//                            var topicPartition = new TopicPartition(topicMetadata.Topic, partition.PartitionId);
+//                            var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
+//                            messageCount += watermarkOffsets.High - watermarkOffsets.Low;
+//
+//                            consumer.Close();
+//                        }
+//                    }
+//                    catch
+//                    {
+//                        // If we can't get message count, use 0
+//                        messageCount = 0;
+//                    }
 
                     topics.Add(new TopicInfo(
                         topicMetadata.Topic,
