@@ -71,6 +71,31 @@ public partial class KafkaService
         return config;
     }
 
+    /// <summary>
+    /// Creates a base ProducerConfig for the specified broker with authentication configured.
+    /// </summary>
+    protected ProducerConfig CreateProducerConfig(BrokerInfo broker)
+    {
+        var bootstrapServers = $"{broker.Host}:{broker.Port}";
+        var config = new ProducerConfig
+        {
+            BootstrapServers = bootstrapServers,
+        };
+
+        // Use OAuthBearer if OIDCEndpoint is provided, otherwise use Plain
+        if (!string.IsNullOrWhiteSpace(broker.OIDCEndpoint))
+        {
+            config.SecurityProtocol = SecurityProtocol.SaslSsl;
+            config.SaslOauthbearerMethod = SaslOauthbearerMethod.Oidc;
+            config.SaslMechanism = SaslMechanism.OAuthBearer;
+            config.SaslOauthbearerTokenEndpointUrl = broker.OIDCEndpoint;
+            config.SaslOauthbearerClientId = broker.ClientId;
+            config.SaslOauthbearerClientSecret = broker.ClientSecret;
+        }
+
+        return config;
+    }
+
     public List<ConsumerInfo> GetConsumerInfo(ConsumerFilter filter)
     {
         var consumers = new List<ConsumerInfo>();

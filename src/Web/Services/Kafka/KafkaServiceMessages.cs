@@ -325,12 +325,34 @@ namespace DW.KafkaViwer.Web.Services.Kafka
 
             return messages;
         }
+        
         public void SendMessage(TopicInfo topic, TopicMessageInfo message)
         {
-            // Mock implementation - in real scenario, this would send message to Kafka broker
-            // For now, we just log or simulate the operation
-            // In production, you would use a Kafka producer library here
-            Console.WriteLine($"Sending message to topic '{topic.Name}': Key={message.Key}, Value={message.Value}");
+            // Найдем активный брокер для топика
+            var broker = _brokers[topic.BrokerId];
+            if (broker == null)
+            {
+                throw new InvalidOperationException("Нет активного брокера для отправки сообщения.");
+            }
+
+            var config = CreateProducerConfig(broker);
+            using var producer = new Confluent.Kafka.ProducerBuilder<Null, string>(config).Build();
+            var msg = new Confluent.Kafka.Message<Null, string>
+            {
+                Value = message.Value
+            };
+
+            try
+            {
+                // Используйте асинхронный метод, но дождитесь завершения в текущем потоке
+                var dr = producer.ProduceAsync(topic.Name, msg).GetAwaiter().GetResult();
+                Console.WriteLine($"Сообщение отправлено в топик '{topic.Name}': Partition={dr.Partition}, Offset={dr.Offset}");
+            }
+            catch (Confluent.Kafka.ProduceException<string, string> ex)
+            {
+                Console.WriteLine($"Ошибка отправки сообщения в топик '{topic.Name}': {ex.Error.Reason}");
+                throw;
+            }
         }
     }
 }
