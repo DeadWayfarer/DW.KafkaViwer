@@ -96,7 +96,7 @@ public partial class KafkaService
     /// <summary>
     /// Загружает количество сообщений для каждого топика и обновляет TopicCache.
     /// </summary>
-    public async Task LoadTopicsMessageCounts()
+    public void LoadTopicsMessageCounts()
     {
         // Убедимся, что топики загружены
         LoadTopics();
@@ -105,52 +105,50 @@ public partial class KafkaService
 
         foreach (var topic in currentTopics)
         {
-            try
-            {
-                // Найти брокер, которому принадлежит топик (по BrokerId)
-                var brokers = _brokersCache.GetBrokers();
-                if (!brokers.TryGetValue(topic.BrokerId, out var broker))
-                    continue;
-
-                var adminConfig = CreateAdminClientConfig(broker);
-                using var adminClient = new Confluent.Kafka.AdminClientBuilder(adminConfig).Build();
-
-                // Получить метаданные по топику
-                var metadata = adminClient.GetMetadata(topic.Name, TimeSpan.FromSeconds(10));
-                long messages = 0;
-
-                // Для всех партиций топика получаем offsetLast - offsetFirst
-                foreach (var partition in metadata.Topics.SelectMany(t => t.Partitions))
-                {
-                    var tp = new Confluent.Kafka.TopicPartition(topic.Name, partition.PartitionId);
-
-                    // Используем Consumer для QueryWatermarkOffsets (в AdminClient метода нет)
-                    var consumerConfig = CreateConsumerConfig(broker, $"watermark-{Guid.NewGuid()}");
-                    using var consumer = new Confluent.Kafka.ConsumerBuilder<Confluent.Kafka.Ignore, Confluent.Kafka.Ignore>(consumerConfig).Build();
-                    var watermarks = consumer.QueryWatermarkOffsets(tp, TimeSpan.FromSeconds(5));
-                    messages += (watermarks.High - watermarks.Low);
-                    consumer.Close();
-                }
-
-                // Создаем новый TopicInfo с обновленным Messages
-                var updated = topic with { Messages = messages };
-                updatedTopics.Add(updated);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при получении количества сообщений для топика {topic.Name}: {ex.Message}");
-                // Можно добавить старую версию топика без изменений
-                updatedTopics.Add(topic);
-            }
+            LoadTopicMessageCount(topic);
         }
 
         // Перезаписать cache обновленными топиками
         _topicCache.AddTopics(updatedTopics);
     }
 
-    public Task LoadTopicMessageCount(TopicInfo topic)
+    public void LoadTopicMessageCount(TopicInfo topic)
     {
-        return Task.CompletedTask;
+        try
+        {
+            // Найти брокер, которому принадлежит топик (по BrokerId)
+            var brokers = _brokersCache.GetBrokers();
+            if (!brokers.TryGetValue(topic.BrokerId, out var broker))
+                return;
+
+            var adminConfig = CreateAdminClientConfig(broker);
+            using var adminClient = new Confluent.Kafka.AdminClientBuilder(adminConfig).Build();
+
+            // Получить метаданные по топику
+            var metadata = adminClient.GetMetadata(topic.Name, TimeSpan.FromSeconds(10));
+            long messages = 0;
+
+            // Для всех партиций топика получаем offsetLast - offsetFirst
+            foreach (var partition in metadata.Topics.SelectMany(t => t.Partitions))
+            {
+                var tp = new Confluent.Kafka.TopicPartition(topic.Name, partition.PartitionId);
+
+                // Используем Consumer для QueryWatermarkOffsets (в AdminClient метода нет)
+                var consumerConfig = CreateConsumerConfig(broker, $"watermark-{Guid.NewGuid()}");
+                using var consumer = new Confluent.Kafka.ConsumerBuilder<Confluent.Kafka.Ignore, Confluent.Kafka.Ignore>(consumerConfig).Build();
+                var watermarks = consumer.QueryWatermarkOffsets(tp, TimeSpan.FromSeconds(5));
+                messages += (watermarks.High - watermarks.Low);
+                consumer.Close();
+            }
+
+            // Создаем новый TopicInfo с обновленным Messages
+            var updated = topic with { Messages = messages };
+            _topicCache.AddTopics(new List<TopicInfo> { updated });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при получении количества сообщений для топика {topic.Name}: {ex.Message}");
+        }
     }
 
     public Task LoadConsumerGroups()

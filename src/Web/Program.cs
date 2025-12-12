@@ -29,9 +29,9 @@ var app = builder.Build();
 // Kick off background load of topic message counts on startup (fire-and-forget)
 {
     var kafkaService = app.Services.GetRequiredService<KafkaService>();
-    _ = Task.Run(async () =>
+    _ = Task.Run(() =>
     {
-        try { await kafkaService.LoadTopicsMessageCounts(); } catch { }
+        try { kafkaService.LoadTopicsMessageCounts(); } catch { }
     });
 }
 
@@ -105,6 +105,31 @@ app.MapGet("/api/messages", (
         To: to,
         Query: query));
     return Results.Json(messages);
+});
+
+// Topic partitions API
+app.MapGet("/api/topics/{topic}/partitions", (
+    string topic,
+    int brokerId,
+    KafkaService kafkaService) =>
+{
+    if (string.IsNullOrWhiteSpace(topic))
+    {
+        return Results.BadRequest("topic is required");
+    }
+
+    try
+    {
+        var partitionsInfo = kafkaService.GetTopicPartitions(topic, brokerId);
+        return Results.Json(partitionsInfo, new System.Text.Json.JsonSerializerOptions 
+        { 
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase 
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Error getting partition info: {ex.Message}");
+    }
 });
 
 // Consumers API

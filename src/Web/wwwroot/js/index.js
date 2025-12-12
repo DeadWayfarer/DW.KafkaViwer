@@ -379,27 +379,69 @@
     const createBtn = container.querySelector('#msg-create-btn');
     const consumersBtn = container.querySelector('#msg-consumers-btn');
 
-    // Set initial broker name or fetch it if not provided
-    if (brokerName) {
-      meta.textContent = `Брокер: ${brokerName}`;
-    } else {
-      meta.textContent = 'Брокер: загрузка...';
-      // Try to get broker name from API
-      fetch('/api/brokers')
-        .then(r => r.json())
-        .then(brokers => {
+    // Load and display broker info and partition info
+    const loadBrokerAndPartitionInfo = async () => {
+      let brokerNameToDisplay = brokerName;
+      
+      // Fetch broker name if not provided
+      if (!brokerNameToDisplay) {
+        try {
+          const brokersResponse = await fetch('/api/brokers');
+          const brokers = await brokersResponse.json();
           const broker = brokers.find(b => (b.id === brokerId) || (b.Id === brokerId));
           if (broker) {
-            const name = broker.connectionName || broker.ConnectionName || '';
-            meta.textContent = `Брокер: ${name || 'неизвестно'}`;
-          } else {
-            meta.textContent = 'Брокер: неизвестно';
+            brokerNameToDisplay = broker.connectionName || broker.ConnectionName || '';
           }
-        })
-        .catch(() => {
-          meta.textContent = 'Брокер: неизвестно';
-        });
-    }
+        } catch (e) {
+          console.error('Error loading broker info:', e);
+        }
+      }
+      
+      // Fetch partition info
+      let partitionsInfo = null;
+      try {
+        const partitionsResponse = await fetch(`/api/topics/${encodeURIComponent(topicName)}/partitions?brokerId=${brokerId}`);
+        if (partitionsResponse.ok) {
+          partitionsInfo = await partitionsResponse.json();
+        }
+      } catch (e) {
+        console.error('Error loading partition info:', e);
+      }
+      
+      // Build HTML for meta section - all in one line
+      let metaHtml = `<div class="message-meta-content">`;
+      metaHtml += `<span class="message-meta-item"><strong>Брокер:</strong> ${brokerNameToDisplay || 'неизвестно'}</span>`;
+      
+      if (partitionsInfo) {
+        metaHtml += `<span class="message-meta-separator">|</span>`;
+        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> ${partitionsInfo.totalMessages.toLocaleString()}</span>`;
+        
+        if (partitionsInfo.partitions && partitionsInfo.partitions.length > 0) {
+          metaHtml += `<span class="message-meta-separator">|</span>`;
+          metaHtml += `<span class="message-meta-item"><strong>Партиции:</strong></span>`;
+          metaHtml += `<div class="partitions-table-wrapper">`;
+          metaHtml += `<table class="table table-dark table-sm partitions-table">`;
+          metaHtml += `<thead><tr><th>П</th><th>Мин</th><th>Макс</th></tr></thead>`;
+          metaHtml += `<tbody>`;
+          partitionsInfo.partitions.forEach(p => {
+            metaHtml += `<tr><td>${p.partitionId}</td><td>${p.minOffset.toLocaleString()}</td><td>${p.maxOffset.toLocaleString()}</td></tr>`;
+          });
+          metaHtml += `</tbody></table>`;
+          metaHtml += `</div>`;
+        }
+      } else {
+        metaHtml += `<span class="message-meta-separator">|</span>`;
+        metaHtml += `<span class="message-meta-item"><strong>Сообщений:</strong> <span class="loading-spinner">⏳</span></span>`;
+        metaHtml += `<span class="message-meta-separator">|</span>`;
+        metaHtml += `<span class="message-meta-item"><strong>Партиции:</strong> <span class="loading-spinner">⏳</span></span>`;
+      }
+      
+      metaHtml += `</div>`;
+      meta.innerHTML = metaHtml;
+    };
+    
+    // Load broker and partition info
+    loadBrokerAndPartitionInfo();
 
     tab.messageFilter = tab.messageFilter || {
       searchType: 'newest',

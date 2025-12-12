@@ -313,6 +313,82 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
 }
 
 .message-meta {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.message-meta-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.message-meta-item {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.message-meta-item strong {
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.message-meta-separator {
+  color: var(--border);
+  margin: 0 4px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  font-size: 0.75rem;
+}
+
+.partitions-table-wrapper {
+  display: inline-block;
+  vertical-align: middle;
+  overflow-x: auto;
+  max-width: fit-content;
+}
+
+.partitions-table {
+  width: auto;
+  font-size: 0.7rem;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  margin: 0;
+  border-collapse: collapse;
+}
+
+.partitions-table th,
+.partitions-table td {
+  padding: 2px 6px;
+  text-align: left;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.partitions-table th {
+  background-color: var(--surface-alt);
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.7rem;
+}
+
+.partitions-table td {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.partitions-table tbody tr:hover {
+  background-color: var(--surface-glass);
+}
+
+.message-meta-old {
   color: var(--text-muted);
 }
 
