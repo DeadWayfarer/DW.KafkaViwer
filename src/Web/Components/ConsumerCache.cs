@@ -1,9 +1,11 @@
 using DW.KafkaViwer.Web.Models;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DW.KafkaViwer.Web.Components;
 
 public class ConsumerCache {
-    private readonly Dictionary<string, ConsumerInfo> _consumers = new Dictionary<string, ConsumerInfo>();
+    private readonly Dictionary<string, ConsumerInfo> _consumers = new();
 
     public void AddConsumers(List<ConsumerInfo> consumers)
     {
@@ -15,6 +17,6 @@ public class ConsumerCache {
 
     public IReadOnlyList<ConsumerInfo> GetConsumers()
     {
-        return _consumers.Values.ToList().AsReadOnly();
+        return _consumers.Values.ToList();
     }
 }

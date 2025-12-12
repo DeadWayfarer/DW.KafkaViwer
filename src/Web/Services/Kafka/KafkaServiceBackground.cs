@@ -73,60 +73,11 @@ public partial class KafkaService
 
                     // Try to get topic configuration for retention days
                     int retentionDays = 7; // Default value
-//                    try
-//                    {
-//                        var topicConfigResource = new ConfigResource
-//                        {
-//                            Type = ResourceType.Topic,
-//                            Name = topicMetadata.Topic
-//                        };
-//
-//                        var describeResult = adminClient.DescribeConfigsAsync(
-//                            new[] { topicConfigResource },
-//                            new DescribeConfigsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
-//                        ).Result;
-//
-//                        if (describeResult.Count > 0 && describeResult[0].Entries.TryGetValue("retention.ms", out var retentionMsConfig))
-//                        {
-//                            if (long.TryParse(retentionMsConfig.Value, out var retentionMs))
-//                            {
-//                                retentionDays = (int)(retentionMs / (1000L * 60 * 60 * 24));
-//                            }
-//                        }
-//                    }
-//                    catch
-//                    {
-//                        // If we can't get retention config, use default
-//                    }
-
-                    // Get message count (approximate) - this is a simplified approach
-                    // In production, you might want to use a consumer to get exact counts
-                    long messageCount = 0;
-//                    try
-//                    {
-//                        foreach (var partition in topicMetadata.Partitions)
-//                        {
-//                            // Get high watermark (last offset) for approximate message count
-//                            var consumerConfig = CreateConsumerConfig(broker, $"topic-viewer-{Guid.NewGuid()}");
-//                            using var consumer = new ConsumerBuilder<Ignore, Ignore>(consumerConfig).Build();
-//
-//                            var topicPartition = new TopicPartition(topicMetadata.Topic, partition.PartitionId);
-//                            var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
-//                            messageCount += watermarkOffsets.High - watermarkOffsets.Low;
-//
-//                            consumer.Close();
-//                        }
-//                    }
-//                    catch
-//                    {
-//                        // If we can't get message count, use 0
-//                        messageCount = 0;
-//                    }
 
                     topics.Add(new TopicInfo(
                         topicMetadata.Topic,
                         partitionCount,
-                        messageCount,
+                        null,
                         retentionDays,
                         broker.Id,
                         broker.ConnectionName));
@@ -142,7 +93,62 @@ public partial class KafkaService
             return topics;
         }
     
-    public Task LoadTopicsMessages()
+    /// <summary>
+    /// Загружает количество сообщений для каждого топика и обновляет TopicCache.
+    /// </summary>
+    public async Task LoadTopicsMessageCounts()
+    {
+        // Убедимся, что топики загружены
+        LoadTopics();
+        var currentTopics = _topicCache.GetTopics().ToList();
+        var updatedTopics = new List<TopicInfo>();
+
+        foreach (var topic in currentTopics)
+        {
+            try
+            {
+                // Найти брокер, которому принадлежит топик (по BrokerId)
+                var brokers = _brokersCache.GetBrokers();
+                if (!brokers.TryGetValue(topic.BrokerId, out var broker))
+                    continue;
+
+                var adminConfig = CreateAdminClientConfig(broker);
+                using var adminClient = new Confluent.Kafka.AdminClientBuilder(adminConfig).Build();
+
+                // Получить метаданные по топику
+                var metadata = adminClient.GetMetadata(topic.Name, TimeSpan.FromSeconds(10));
+                long messages = 0;
+
+                // Для всех партиций топика получаем offsetLast - offsetFirst
+                foreach (var partition in metadata.Topics.SelectMany(t => t.Partitions))
+                {
+                    var tp = new Confluent.Kafka.TopicPartition(topic.Name, partition.PartitionId);
+
+                    // Используем Consumer для QueryWatermarkOffsets (в AdminClient метода нет)
+                    var consumerConfig = CreateConsumerConfig(broker, $"watermark-{Guid.NewGuid()}");
+                    using var consumer = new Confluent.Kafka.ConsumerBuilder<Confluent.Kafka.Ignore, Confluent.Kafka.Ignore>(consumerConfig).Build();
+                    var watermarks = consumer.QueryWatermarkOffsets(tp, TimeSpan.FromSeconds(5));
+                    messages += (watermarks.High - watermarks.Low);
+                    consumer.Close();
+                }
+
+                // Создаем новый TopicInfo с обновленным Messages
+                var updated = topic with { Messages = messages };
+                updatedTopics.Add(updated);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при получении количества сообщений для топика {topic.Name}: {ex.Message}");
+                // Можно добавить старую версию топика без изменений
+                updatedTopics.Add(topic);
+            }
+        }
+
+        // Перезаписать cache обновленными топиками
+        _topicCache.AddTopics(updatedTopics);
+    }
+
+    public Task LoadTopicMessageCount(TopicInfo topic)
     {
         return Task.CompletedTask;
     }

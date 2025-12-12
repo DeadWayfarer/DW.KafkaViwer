@@ -1,6 +1,7 @@
 using DW.KafkaViwer.Web.Services.Kafka;
 using DW.KafkaViwer.Web.Services;
 using DW.KafkaViwer.Web.Components;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,15 @@ builder.Services.AddSingleton<BrokersCache>(sp => new BrokersCache(brokersDict))
 builder.Services.AddSingleton<KafkaService>();
 
 var app = builder.Build();
+
+// Kick off background load of topic message counts on startup (fire-and-forget)
+{
+    var kafkaService = app.Services.GetRequiredService<KafkaService>();
+    _ = Task.Run(async () =>
+    {
+        try { await kafkaService.LoadTopicsMessageCounts(); } catch { }
+    });
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

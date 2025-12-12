@@ -191,11 +191,15 @@
         .forEach(t => {
           const tr = document.createElement('tr');
           const brokerName = t.brokerName ?? t.BrokerName ?? t.brokername ?? 'Неизвестно';
+          const messagesCell = (t.messages === null || t.messages === undefined)
+            ? '<span class="loading-icon" title="Загрузка...">⏳</span>'
+            : t.messages.toLocaleString();
+
           tr.innerHTML = `
             <td>${brokerName}</td>
             <td>${t.name}</td>
             <td>${t.partitions}</td>
-            <td>${t.messages.toLocaleString()}</td>
+            <td>${messagesCell}</td>
             <td>${t.retentionDays}</td>
           `;
           tr.addEventListener('click', (e) => {
