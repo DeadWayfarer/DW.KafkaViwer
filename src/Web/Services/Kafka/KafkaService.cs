@@ -1,4 +1,5 @@
 using DW.KafkaViwer.Web.Models;
+using DW.KafkaViwer.Web.Components;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 
@@ -6,11 +7,18 @@ namespace DW.KafkaViwer.Web.Services.Kafka;
 
 public partial class KafkaService
 {
-    private readonly Dictionary<int, BrokerInfo> _brokers;
+    private readonly BrokersCache _brokersCache;
+    private readonly TopicCache _topicCache;
+    private readonly ConsumerCache _consumerCache;
 
-    public KafkaService(Dictionary<int, BrokerInfo> brokers)
+    public KafkaService(
+        BrokersCache brokersCache,
+        TopicCache topicCache,
+        ConsumerCache consumerCache)
     {
-        _brokers = brokers ?? new Dictionary<int, BrokerInfo>();
+        _brokersCache = brokersCache;
+        _topicCache = topicCache;
+        _consumerCache = consumerCache;
     }
 
     /// <summary>
@@ -101,7 +109,7 @@ public partial class KafkaService
         var consumers = new List<ConsumerInfo>();
 
         // Iterate through all active brokers to find consumer groups
-        foreach (var broker in _brokers.Values)
+        foreach (var broker in GetBrokers().Values)
         {
             if (broker.Status != "Active")
             {

@@ -8,7 +8,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
         public List<TopicMessageInfo> GetTopicMessages(TopicMessageFilter filter)
         {
             // Find broker by ID
-            var broker = _brokers[filter.BrokerId];
+            var broker = GetBrokers()[filter.BrokerId];
             if (broker == null)
             {
                 throw new ArgumentException($"Broker with ID {filter.BrokerId} not found");
@@ -329,7 +329,7 @@ namespace DW.KafkaViwer.Web.Services.Kafka
         public void SendMessage(TopicInfo topic, TopicMessageInfo message)
         {
             // Найдем активный брокер для топика
-            var broker = _brokers[topic.BrokerId];
+            var broker = GetBrokers()[topic.BrokerId];
             if (broker == null)
             {
                 throw new InvalidOperationException("Нет активного брокера для отправки сообщения.");

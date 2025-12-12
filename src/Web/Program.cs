@@ -1,4 +1,6 @@
 using DW.KafkaViwer.Web.Services.Kafka;
+using DW.KafkaViwer.Web.Services;
+using DW.KafkaViwer.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +18,10 @@ var brokersSection = builder.Configuration.GetSection("Brokers");
 var brokers = brokersSection.Get<List<DW.KafkaViwer.Web.Models.BrokerInfo>>() ?? new List<DW.KafkaViwer.Web.Models.BrokerInfo>();
 var brokersDict = brokers.ToDictionary(x => x.Id);
 
-// Register KafkaService with brokers from configuration
-builder.Services.AddSingleton<KafkaService>(sp => new KafkaService(brokersDict));
+builder.Services.AddSingleton<TopicCache>();
+builder.Services.AddSingleton<ConsumerCache>();
+builder.Services.AddSingleton<BrokersCache>(sp => new BrokersCache(brokersDict));
+builder.Services.AddSingleton<KafkaService>();
 
 var app = builder.Build();
 
@@ -110,7 +114,7 @@ app.MapGet("/api/consumers", (
 // Brokers API
 app.MapGet("/api/brokers", (KafkaService kafkaService) =>
 {
-    var brokers = kafkaService.GetBrokers();
+    var brokers = kafkaService.GetBrokers().Values.ToList();
     return Results.Json(brokers);
 });
 
@@ -135,7 +139,7 @@ app.MapDelete("/api/brokers/{id:int}", (
     KafkaService kafkaService) =>
 {
     var brokers = kafkaService.GetBrokers();
-    var broker = brokers.FirstOrDefault(b => b.Id == id);
+    var broker = brokers[id];
     if (broker == null)
     {
         return Results.NotFound();
