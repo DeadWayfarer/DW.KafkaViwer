@@ -134,16 +134,14 @@ app.MapGet("/api/topics/{topic}/partitions", (
 
 // Consumers API
 app.MapGet("/api/consumers", (
-    string topic,
+    string? topic,
     KafkaService kafkaService) =>
 {
-    if (string.IsNullOrWhiteSpace(topic))
-    {
-        return Results.BadRequest("topic is required");
-    }
-
     var items = kafkaService.GetConsumerInfo(new DW.KafkaViwer.Web.Models.ConsumerFilter(topic));
-    return Results.Json(items);
+    return Results.Json(items, new System.Text.Json.JsonSerializerOptions 
+    { 
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase 
+    });
 });
 
 // Brokers API

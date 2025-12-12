@@ -431,6 +431,62 @@ body.fluent-body > .container-fluid > main.card.glass-panel {
   background-color: var(--surface-glass);
 }
 
+/* Consumer view styles */
+.consumer-group-row {
+  cursor: pointer;
+}
+
+.consumer-group-row:hover {
+  background-color: rgba(76, 194, 255, 0.1);
+}
+
+.consumer-group-row.active {
+  background-color: rgba(76, 194, 255, 0.2);
+}
+
+.expand-icon {
+  display: inline-block;
+  width: 16px;
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  color: var(--accent);
+}
+
+.consumer-detail-row {
+  background-color: var(--surface-alt);
+}
+
+.consumer-details {
+  font-size: 0.85rem;
+}
+
+.detail-section {
+  margin-bottom: 12px;
+}
+
+.detail-section strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.detail-table {
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.detail-table th {
+  background-color: var(--surface);
+  font-weight: 600;
+}
+
 .message-meta-old {
   color: var(--text-muted);
 }

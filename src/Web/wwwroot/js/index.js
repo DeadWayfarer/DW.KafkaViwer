@@ -941,40 +941,153 @@
 
     const renderRows = (rows) => {
       tbody.innerHTML = '';
-      rows.forEach(m => {
+      const expandedGroups = new Set();
+      
+      rows.forEach(consumer => {
+        // Main row
         const tr = document.createElement('tr');
+        tr.className = 'consumer-group-row';
+        tr.dataset.groupId = consumer.group;
+        
+        const hasDetails = (consumer.partitions && consumer.partitions.length > 0) || 
+                          (consumer.members && consumer.members.length > 0);
+        
+        const expandIcon = hasDetails ? '<span class="expand-icon">▶</span>' : '<span style="width: 20px; display: inline-block;"></span>';
+        
         tr.innerHTML = `
-          <td>${m.group}</td>
-          <td>${m.member}</td>
-          <td>${m.lag}</td>
-          <td>${m.status}</td>
+          <td class="expand-cell" style="cursor: ${hasDetails ? 'pointer' : 'default'}; text-align: center;">${expandIcon}</td>
+          <td>${consumer.brokerName || 'неизвестно'}</td>
+          <td>${consumer.group}</td>
+          <td>${consumer.member || 'н/д'}</td>
+          <td>${consumer.lag.toLocaleString()}</td>
+          <td>${consumer.status}</td>
         `;
-        tr.addEventListener('click', () => {
-          // Remove active class from all rows
-          tbody.querySelectorAll('tr').forEach(row => row.classList.remove('active'));
-          // Add active class to clicked row
+        
+        // Expand/collapse functionality
+        if (hasDetails) {
+          const expandCell = tr.querySelector('.expand-cell');
+          expandCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const groupId = consumer.group;
+            const isExpanded = expandedGroups.has(groupId);
+            
+            if (isExpanded) {
+              // Collapse - remove detail row
+              const detailRow = tbody.querySelector(`tr[data-detail-for="${groupId}"]`);
+              if (detailRow) detailRow.remove();
+              expandCell.querySelector('.expand-icon').textContent = '▶';
+              expandedGroups.delete(groupId);
+            } else {
+              // Expand - add detail row
+              const detailRow = createDetailRow(consumer);
+              tbody.insertBefore(detailRow, tr.nextSibling);
+              expandCell.querySelector('.expand-icon').textContent = '▼';
+              expandedGroups.add(groupId);
+            }
+          });
+        }
+        
+        tr.addEventListener('click', (e) => {
+          if (e.target.closest('.expand-cell')) return;
+          tbody.querySelectorAll('tr.consumer-group-row').forEach(row => row.classList.remove('active'));
           tr.classList.add('active');
         });
+        
         tbody.appendChild(tr);
       });
+    };
+    
+    const createDetailRow = (consumer) => {
+      const tr = document.createElement('tr');
+      tr.className = 'consumer-detail-row';
+      tr.dataset.detailFor = consumer.group;
+      
+      let detailHtml = '<td colspan="6" style="padding: 12px; background: var(--surface-alt);">';
+      detailHtml += '<div class="consumer-details">';
+      
+      // Partitions info
+      if (consumer.partitions && consumer.partitions.length > 0) {
+        detailHtml += '<div class="detail-section">';
+        detailHtml += '<strong>Партиции:</strong>';
+        detailHtml += '<table class="table table-dark table-sm detail-table">';
+        detailHtml += '<thead><tr><th>Топик</th><th>Партиция</th><th>Consumer Offset</th><th>High Watermark</th><th>Lag</th></tr></thead>';
+        detailHtml += '<tbody>';
+        
+        // Group by topic
+        const partitionsByTopic = {};
+        consumer.partitions.forEach(p => {
+          if (!partitionsByTopic[p.topic]) partitionsByTopic[p.topic] = [];
+          partitionsByTopic[p.topic].push(p);
+        });
+        
+        Object.keys(partitionsByTopic).forEach(topic => {
+          partitionsByTopic[topic].forEach(p => {
+            detailHtml += `<tr>
+              <td>${p.topic}</td>
+              <td>${p.partition}</td>
+              <td>${p.consumerOffset.toLocaleString()}</td>
+              <td>${p.highWatermark.toLocaleString()}</td>
+              <td>${p.lag.toLocaleString()}</td>
+            </tr>`;
+          });
+        });
+        
+        detailHtml += '</tbody></table>';
+        detailHtml += '</div>';
+      }
+      
+      // Members info
+      if (consumer.members && consumer.members.length > 0) {
+        detailHtml += '<div class="detail-section" style="margin-top: 12px;">';
+        detailHtml += '<strong>Участники:</strong>';
+        consumer.members.forEach((member, idx) => {
+          detailHtml += `<div style="margin-top: 8px; padding: 8px; background: var(--surface); border-radius: 4px;">`;
+          detailHtml += `<div><strong>Member ID:</strong> ${member.memberId}</div>`;
+          detailHtml += `<div><strong>Client ID:</strong> ${member.clientId}</div>`;
+          detailHtml += `<div><strong>Host:</strong> ${member.host}</div>`;
+          
+          if (member.partitions && member.partitions.length > 0) {
+            detailHtml += '<div style="margin-top: 6px;"><strong>Назначенные партиции:</strong></div>';
+            detailHtml += '<table class="table table-dark table-sm detail-table" style="margin-top: 4px;">';
+            detailHtml += '<thead><tr><th>Топик</th><th>Партиция</th><th>Offset</th><th>Lag</th></tr></thead>';
+            detailHtml += '<tbody>';
+            member.partitions.forEach(p => {
+              detailHtml += `<tr>
+                <td>${p.topic}</td>
+                <td>${p.partition}</td>
+                <td>${p.consumerOffset.toLocaleString()}</td>
+                <td>${p.lag.toLocaleString()}</td>
+              </tr>`;
+            });
+            detailHtml += '</tbody></table>';
+          }
+          
+          detailHtml += '</div>';
+        });
+        detailHtml += '</div>';
+      }
+      
+      detailHtml += '</div></td>';
+      tr.innerHTML = detailHtml;
+      
+      return tr;
     };
 
     const loadConsumers = () => {
       if (statusEl) statusEl.textContent = 'Загрузка...';
-      fetch('/api/consumers?topic=' + encodeURIComponent(topicName))
+      const url = topicName 
+        ? `/api/consumers?topic=${encodeURIComponent(topicName)}`
+        : '/api/consumers';
+      
+      fetch(url)
         .then(r => r.json())
         .then(data => {
           renderRows(data ?? []);
           if (statusEl) statusEl.textContent = '';
         })
-        .catch(() => {
-          const mock = [
-            { group: `${topicName}-grp`, member: 'consumer-1', lag: 12, status: 'Активен' },
-            { group: `${topicName}-grp`, member: 'consumer-2', lag: 3, status: 'Активен' },
-            { group: `${topicName}-grp`, member: 'consumer-3', lag: 25, status: 'Перебалансировка' }
-          ];
-          renderRows(mock);
-          if (statusEl) statusEl.textContent = 'Показаны мок-данные';
+        .catch(error => {
+          console.error('Error loading consumers:', error);
+          if (statusEl) statusEl.textContent = 'Ошибка загрузки';
         });
     };
 
