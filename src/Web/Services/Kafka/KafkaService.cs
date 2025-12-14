@@ -103,31 +103,4 @@ public partial class KafkaService
 
         return config;
     }
-
-    public List<ConsumerInfo> GetConsumerInfo(ConsumerFilter filter)
-    {
-        var consumers = new List<ConsumerInfo>();
-
-        // Iterate through all active brokers to find consumer groups
-        foreach (var broker in GetBrokers().Values)
-        {
-            if (broker.Status != "Active")
-            {
-                continue;
-            }
-
-            try
-            {
-                var brokerConsumers = LoadConsumersFromBroker(broker, filter.TopicName);
-                consumers.AddRange(brokerConsumers);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading consumers from broker {broker.ConnectionName} ({broker.Host}:{broker.Port}): {ex.Message}");
-            }
-        }
-
-        return consumers;
-    }
-
 }

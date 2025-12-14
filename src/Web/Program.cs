@@ -26,12 +26,17 @@ builder.Services.AddSingleton<KafkaService>();
 
 var app = builder.Build();
 
-// Kick off background load of topic message counts on startup (fire-and-forget)
+// Kick off background load of topic message counts and consumer groups on startup (fire-and-forget)
 {
     var kafkaService = app.Services.GetRequiredService<KafkaService>();
     _ = Task.Run(() =>
     {
-        try { kafkaService.LoadTopicsMessageCounts(); } catch { }
+        try 
+        { 
+            kafkaService.LoadTopicsMessageCounts();
+            kafkaService.LoadConsumerGroups();
+        } 
+        catch { }
     });
 }
 

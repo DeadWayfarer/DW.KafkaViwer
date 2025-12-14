@@ -1081,12 +1081,12 @@
     };
 
     const loadConsumers = () => {
-      if (statusEl) statusEl.textContent = 'Загрузка...';
+      if (statusEl) statusEl.textContent = topicName ? 'Загрузка из Kafka...' : 'Загрузка из кеша...';
       const url = topicName 
         ? `/api/consumers?topic=${encodeURIComponent(topicName)}`
         : '/api/consumers';
       
-      console.log('Loading consumers from:', url, 'topicName:', topicName);
+      console.log('Loading consumers from:', url, 'topicName:', topicName, topicName ? '(direct from Kafka)' : '(from cache)');
       
       fetch(url)
         .then(r => {

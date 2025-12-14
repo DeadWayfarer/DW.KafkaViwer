@@ -160,8 +160,35 @@ public partial class KafkaService
         }
     }
 
-    public Task LoadConsumerGroups()
+    /// <summary>
+    /// Загружает все группы консьюмеров со всех брокеров и сохраняет в кеш.
+    /// </summary>
+    public void LoadConsumerGroups()
     {
-        return Task.CompletedTask;
+        var allConsumers = new List<ConsumerInfo>();
+
+        foreach (var broker in _brokersCache.GetBrokers().Values)
+        {
+            // Skip inactive brokers
+            if (broker.Status != "Active")
+            {
+                continue;
+            }
+
+            try
+            {
+                // Load all consumers from this broker (without topic filter)
+                var brokerConsumers = LoadConsumersFromBroker(broker, null);
+                allConsumers.AddRange(brokerConsumers);
+            }
+            catch (Exception ex)
+            {
+                // Log error but continue with other brokers
+                Console.WriteLine($"Error loading consumer groups from broker {broker.ConnectionName} ({broker.Host}:{broker.Port}): {ex.Message}");
+            }
+        }
+
+        // Update cache with all loaded consumers
+        _consumerCache.AddConsumers(allConsumers);
     }
 }
