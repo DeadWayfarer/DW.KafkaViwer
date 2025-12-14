@@ -8,9 +8,9 @@ public partial class KafkaService
 {
     /// <summary>
     /// Loads detailed consumer group information from a broker.
-    /// Always loads all consumer groups (topicName is ignored for loading, used only for filtering).
+    /// If groupIds is provided, loads only those groups. Otherwise loads all groups.
     /// </summary>
-    private List<ConsumerInfo> LoadConsumersFromBroker(BrokerInfo broker, string? topicName = null)
+    private List<ConsumerInfo> LoadConsumersFromBroker(BrokerInfo broker, List<string>? groupIds = null)
     {
         var consumers = new List<ConsumerInfo>();
 
@@ -22,9 +22,8 @@ public partial class KafkaService
                 var adminConfig = CreateAdminClientConfig(broker);
                 using var adminClient = new AdminClientBuilder(adminConfig).Build();
 
-                var groupIds = new List<string>();
-                // If topicName is null, load all consumer groups
-                if (topicName == null)
+                // If groupIds not provided, load all consumer groups from broker
+                if (groupIds == null || groupIds.Count == 0)
                 {
                     var listResult = adminClient.ListConsumerGroupsAsync(
                         new ListConsumerGroupsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
@@ -33,9 +32,6 @@ public partial class KafkaService
                     if (listResult?.Valid == null) return consumers;
 
                     groupIds = listResult.Valid.Select(g => g.GroupId).ToList();
-                }
-                else {
-                    groupIds = _consumerCache.GetConsumers(topicName).Select(c => c.Group).ToList();
                 }
                 
                 if (groupIds.Count == 0) return consumers;
@@ -63,7 +59,7 @@ public partial class KafkaService
         return consumers;
     }
 
-    private List<ConsumerInfo> LoadConsumersFromBrokerByIds(BrokerInfo broker, Dictionary<string, ConsumerGroupDescription>? describeResult, List<string?> groupIds)
+    private List<ConsumerInfo> LoadConsumersFromBrokerByIds(BrokerInfo broker, Dictionary<string, ConsumerGroupDescription>? describeResult, List<string> groupIds)
     {
         var consumers = new List<ConsumerInfo>();
 
@@ -75,8 +71,25 @@ public partial class KafkaService
 
         foreach (var groupId in groupIds)
         {
+            if (string.IsNullOrEmpty(groupId)) continue;
+            
             try
             {
+                if (describeResult == null || !describeResult.TryGetValue(groupId, out var groupDescription) || groupDescription == null)
+                {
+                    // Still create consumer info even if description is missing
+                    consumers.Add(new ConsumerInfo(
+                        groupId,
+                        "unknown",
+                        0,
+                        "Unknown",
+                        broker.Id,
+                        broker.ConnectionName,
+                        null,
+                        null));
+                    continue;
+                }
+
                 // Get offsets for this group only (Kafka API allows only one group at a time)
                 var offsetsRequest = new ConsumerGroupTopicPartitions(groupId, null);
                 var offsetsResult = adminClient.ListConsumerGroupOffsetsAsync(
@@ -84,51 +97,54 @@ public partial class KafkaService
                     new ListConsumerGroupOffsetsOptions { RequestTimeout = TimeSpan.FromSeconds(10) }
                 ).Result;
 
-                if (offsetsResult == null || offsetsResult.Count == 0) continue;
-
-                var groupOffsets = offsetsResult[0];
-                if (groupOffsets?.Partitions == null) continue;
-
-                // Always load all partitions (topicName is used only for filtering in cache)
-                var relevantPartitions = groupOffsets.Partitions.ToList();
-
-                if (relevantPartitions.Count == 0) continue;
-
-                // Group partitions by topic
-                var partitionsByTopic = relevantPartitions.GroupBy(p => p.Topic).ToList();
-
                 var allPartitions = new List<PartitionLagInfo>();
                 var members = new List<MemberDetailInfo>();
                 int totalLag = 0;
 
-                // Calculate lag for each partition
-                foreach (var partition in relevantPartitions)
+                if (offsetsResult != null && offsetsResult.Count > 0)
                 {
-                    try
+                    var groupOffsets = offsetsResult[0];
+                    if (groupOffsets?.Partitions != null && groupOffsets.Partitions.Count > 0)
                     {
-                        var topicPartition = new TopicPartition(partition.Topic, partition.Partition);
-                        var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
-                        
-                        long consumerOffset = partition.Offset;
-                        long highWatermark = watermarkOffsets.High;
-                        long lag = Math.Max(0, highWatermark - consumerOffset);
-                        
-                        totalLag += (int)lag;
-                        
-                        allPartitions.Add(new PartitionLagInfo(
-                            partition.Topic,
-                            partition.Partition,
-                            consumerOffset,
-                            highWatermark,
-                            lag));
-                    }
-                    catch
-                    {
-                        // Skip partition if we can't get lag
+                        // Always load all partitions (topicName is used only for filtering in cache)
+                        var relevantPartitions = groupOffsets.Partitions.ToList();
+
+                        // Calculate lag for each partition
+                        foreach (var partition in relevantPartitions)
+                        {
+                            try
+                            {
+                                var topicPartition = new TopicPartition(partition.Topic, partition.Partition);
+                                var watermarkOffsets = consumer.QueryWatermarkOffsets(topicPartition, TimeSpan.FromSeconds(10));
+                                
+                                long consumerOffset = partition.Offset;
+                                long highWatermark = watermarkOffsets.High;
+                                long lag = Math.Max(0, highWatermark - consumerOffset);
+                                
+                                totalLag += (int)lag;
+                                
+                                allPartitions.Add(new PartitionLagInfo(
+                                    partition.Topic,
+                                    partition.Partition,
+                                    consumerOffset,
+                                    highWatermark,
+                                    lag));
+                            }
+                            catch (Exception ex)
+                            {
+                                // Skip partition if we can't get lag, but still add partition info without lag
+                                Console.WriteLine($"Warning: Could not get lag for partition {partition.Topic}:{partition.Partition}: {ex.Message}");
+                                allPartitions.Add(new PartitionLagInfo(
+                                    partition.Topic,
+                                    partition.Partition,
+                                    partition.Offset,
+                                    0,
+                                    0));
+                            }
+                        }
                     }
                 }
-                if (!describeResult.TryGetValue(groupId, out var groupDescription) || groupDescription == null)
-                    continue;
+
                 // Process members if available
                 if (groupDescription.Members != null && groupDescription.Members.Count > 0)
                 {
@@ -172,7 +188,7 @@ public partial class KafkaService
                     _ => "Unknown"
                 };
 
-                // Create consumer info with details
+                // Always create consumer info with partitions (even if empty) and members (even if empty)
                 consumers.Add(new ConsumerInfo(
                     groupId,
                     groupDescription.Members?.Count > 0 ? $"{groupDescription.Members.Count} member(s)" : "no-member",
@@ -182,15 +198,31 @@ public partial class KafkaService
                     broker.ConnectionName,
                     members.Count > 0 ? members : null,
                     allPartitions.Count > 0 ? allPartitions : null));
-
-                consumer.Close();
-
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error processing consumer group {groupId}: {ex.Message}");
+                // Still create a basic consumer info entry even on error
+                try
+                {
+                    if (!string.IsNullOrEmpty(groupId))
+                    {
+                        consumers.Add(new ConsumerInfo(
+                            groupId,
+                            "error",
+                            0,
+                            "Error",
+                            broker.Id,
+                            broker.ConnectionName,
+                            null,
+                            null));
+                    }
+                }
+                catch { }
             }
         }
+        
+        // Consumer will be closed automatically by using statement
         return consumers;
     }
 
@@ -202,11 +234,21 @@ public partial class KafkaService
             return _consumerCache.GetConsumers(null).ToList();
         }
 
-        // If topic specified, load directly from Kafka and update cache
+        // If topic specified, load only groups that have partitions for this topic
         var consumers = new List<ConsumerInfo>();
 
+        // Get group IDs from cache that have partitions for this topic
+        var groupIdsByBroker = _consumerCache.GetGroupIdsByTopic(filter.TopicName);
 
-        // Iterate through all active brokers to find consumer groups
+        // If cache is empty or no groups found for this topic, return empty list
+        // (Groups should be loaded at startup via LoadConsumerGroups)
+        if (groupIdsByBroker.Count == 0)
+        {
+            Console.WriteLine($"No consumer groups found in cache for topic {filter.TopicName}. Cache may be empty or topic has no consumers.");
+            return consumers;
+        }
+
+        // Iterate through all active brokers
         foreach (var broker in GetBrokers().Values)
         {
             if (broker.Status != "Active")
@@ -214,12 +256,51 @@ public partial class KafkaService
                 continue;
             }
 
-
             try
             {
-                var brokerConsumers = LoadConsumersFromBroker(broker, filter.TopicName);
+                // Get group IDs for this broker that have partitions for the topic
+                if (!groupIdsByBroker.TryGetValue(broker.Id, out var groupIds) || groupIds == null || groupIds.Count == 0)
+                {
+                    // No groups for this topic on this broker, skip
+                    continue;
+                }
+
+                Console.WriteLine($"Loading {groupIds.Count} consumer groups for topic {filter.TopicName} from broker {broker.ConnectionName}");
+
+                // Load only these specific groups from broker
+                var brokerConsumers = LoadConsumersFromBroker(broker, groupIds);
+                
+                // Update cache with updated consumers from this broker (only for these groups)
                 _consumerCache.AddConsumers(brokerConsumers);
-                consumers.AddRange(brokerConsumers);
+                
+                // Filter by topic for return
+                var filteredConsumers = brokerConsumers
+                    .Where(c => c.Partitions != null && c.Partitions.Any(p => p.Topic == filter.TopicName))
+                    .Select(c =>
+                    {
+                        // Filter partitions and members by topic
+                        var filteredPartitions = c.Partitions?.Where(p => p.Topic == filter.TopicName).ToList();
+                        var filteredMembers = c.Members?.Select(m =>
+                        {
+                            var memberPartitions = m.Partitions?.Where(p => p.Topic == filter.TopicName).ToList() ?? new List<PartitionLagInfo>();
+                            return new MemberDetailInfo(m.MemberId, m.ClientId, m.Host, memberPartitions);
+                        }).Where(m => m.Partitions.Count > 0).ToList();
+
+                        var totalLag = filteredPartitions?.Sum(p => p.Lag) ?? 0;
+
+                        return new ConsumerInfo(
+                            c.Group,
+                            c.Member,
+                            (int)totalLag,
+                            c.Status,
+                            c.BrokerId,
+                            c.BrokerName,
+                            filteredMembers?.Count > 0 ? filteredMembers : null,
+                            filteredPartitions?.Count > 0 ? filteredPartitions : null);
+                    })
+                    .ToList();
+                
+                consumers.AddRange(filteredConsumers);
             }
             catch (Exception ex)
             {

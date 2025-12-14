@@ -67,6 +67,36 @@ public class ConsumerCache {
         return allConsumers;
     }
 
+    /// <summary>
+    /// Gets list of consumer group IDs that have partitions for the specified topic.
+    /// Returns dictionary: brokerId -> list of groupIds
+    /// </summary>
+    public Dictionary<int, List<string>> GetGroupIdsByTopic(string topicName)
+    {
+        var result = new Dictionary<int, List<string>>();
+        
+        foreach (var brokerEntry in _consumersByBroker)
+        {
+            var brokerId = brokerEntry.Key;
+            var groupIds = new List<string>();
+            
+            foreach (var consumer in brokerEntry.Value.Values)
+            {
+                if (consumer.Partitions != null && consumer.Partitions.Any(p => p.Topic == topicName))
+                {
+                    groupIds.Add(consumer.Group);
+                }
+            }
+            
+            if (groupIds.Count > 0)
+            {
+                result[brokerId] = groupIds;
+            }
+        }
+        
+        return result;
+    }
+
     public void Clear()
     {
         _consumersByBroker.Clear();
